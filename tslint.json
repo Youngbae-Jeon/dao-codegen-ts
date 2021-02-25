@@ -1,0 +1,9 @@
+{
+    "defaultSeverity": "error",
+    "jsRules": {},
+    "rules": {
+		"member-ordering": false,
+		"no-unused-expression": true,
+		"no-floating-promises": true
+	}
+}

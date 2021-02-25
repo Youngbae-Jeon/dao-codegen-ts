@@ -1,0 +1,32 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "설정파일 스키마",
+	"type": "object",
+	"definitions": {
+		"ColumnDefinition": {
+			"type": "object",
+			"properties": {
+				"prefix": { "type": "string" },
+				"suffix": { "type": "string" }
+			}
+		}
+	},
+	"properties": {
+		"name": { "type": "string" },
+		"title": { "type": "string" },
+		"columns": {
+			"type": "object",
+			"patternProperties": {
+				"^.*$": {
+					"$ref": "#/definitions/ColumnDefinition"
+				}
+			}
+		},
+		"constraints": {
+			"type": "array",
+			"items": {
+				"$ref": "#/definitions/IndexDefinition"
+			}
+		}
+	}
+}

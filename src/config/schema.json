@@ -1,0 +1,63 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "설정파일 스키마",
+	"type": "object",
+	"definitions": {
+		"TargetNameOptions": {
+			"type": "object",
+			"properties": {
+				"prefix": { "type": "string" },
+				"suffix": { "type": "string" }
+			}
+		},
+		"GenerationOutputOptions": {
+			"type": "object",
+			"properties": {
+				"dir": { "type": "string" },
+				"prefix": { "type": "string" },
+				"suffix": { "type": "string" }
+			},
+			"required": ["dir"]
+		}
+	},
+	"properties": {
+		"generations": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"files": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"interface": {
+						"type": "object",
+						"properties": {
+							"name": { "$ref": "#/definitions/TargetNameOptions" },
+							"output": { "$ref": "#/definitions/GenerationOutputOptions" }
+						},
+						"required": ["output"]
+					},
+					"dao": {
+						"type": "object",
+						"properties": {
+							"className": { "$ref": "#/definitions/TargetNameOptions" },
+							"output": { "$ref": "#/definitions/GenerationOutputOptions" }
+						},
+						"required": ["output"]
+					},
+					"sql": {
+						"type": "object",
+						"properties": {
+							"tableName": { "$ref": "#/definitions/TargetNameOptions" },
+							"output": { "$ref": "#/definitions/GenerationOutputOptions" }
+						},
+						"required": ["output"]
+					}
+				},
+				"required": ["files"]
+			}
+		}
+	},
+	"required": ["generations"]
+}
