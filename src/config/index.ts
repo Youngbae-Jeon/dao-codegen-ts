@@ -20,7 +20,7 @@ export interface Generation {
 		};
 		output: GenerationOutputOptions;
 	},
-	dao: {
+	dao?: {
 		className?: {
 			prefix?: string;
 			suffix?: string;

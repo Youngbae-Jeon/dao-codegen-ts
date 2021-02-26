@@ -6,27 +6,61 @@
 		"ColumnDefinition": {
 			"type": "object",
 			"properties": {
-				"prefix": { "type": "string" },
-				"suffix": { "type": "string" }
-			}
+				"title": { "type": "string" },
+				"type": { "type": "string" },
+				"property": {
+					"type": "object",
+					"properties": {
+						"name": { "type": "string" },
+						"type": { "type": "string" }
+					}
+				}
+			},
+			"required": ["type"]
+		},
+		"IndexDefinition": {
+			"type": "object",
+			"properties": {
+				"name": { "type": "string" },
+				"with": {
+					"type": "array",
+					"items": { "type": "string" },
+					"minItems": 1
+				},
+				"unique": { "type": "boolean" }
+			},
+			"required": ["with"]
 		}
 	},
 	"properties": {
 		"name": { "type": "string" },
+		"table": { "type": "string" },
 		"title": { "type": "string" },
 		"columns": {
 			"type": "object",
 			"patternProperties": {
+				"^.*$": { "$ref": "#/definitions/ColumnDefinition" }
+			},
+			"minProperties": 1
+		},
+		"primaryKey": {
+			"type": "array",
+			"items": { "type": "string" },
+			"minItems": 1
+		},
+		"indexes": {
+			"type": "array",
+			"items": { "$ref": "#/definitions/IndexDefinition" }
+		},
+		"imports": {
+			"type": "object",
+			"patternProperties": {
 				"^.*$": {
-					"$ref": "#/definitions/ColumnDefinition"
+					"type": "array",
+					"items": { "type": "string" }
 				}
 			}
-		},
-		"constraints": {
-			"type": "array",
-			"items": {
-				"$ref": "#/definitions/IndexDefinition"
-			}
 		}
-	}
+	},
+	"required": ["table", "columns"]
 }

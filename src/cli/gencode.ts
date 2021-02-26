@@ -7,7 +7,7 @@ import { generate_compound } from './generate_compound';
 import { generate_compound_interface } from './generate_compound_interface';
 import { generate_entity } from './generate_entity';
 // import { generateInterface } from './generate_entity_interface';
-import { generate_sql } from './generate_sql';
+// import { generate_sql } from './generate_sql';
 import { JsCoder } from '../lib/JsCoder';
 import { Config } from './spec';
 import { ITable } from 'model';
@@ -22,23 +22,23 @@ const config: Config = {
 let unnecessaryFiles: string[] = [];
 
 // create sql files: scheme/tables/*.sql
-{
-	const filedir = `${config.mrshopDir}/scheme/tables`;
-	if (fs.existsSync(filedir)) {
-		unnecessaryFiles.push(...new GlobSync(`${filedir}/*.sql`).found);
-	} else {
-		fs.mkdirSync(filedir);
-		console.log(`${filedir} created.`);
-	}
+// {
+// 	const filedir = `${config.mrshopDir}/scheme/tables`;
+// 	if (fs.existsSync(filedir)) {
+// 		unnecessaryFiles.push(...new GlobSync(`${filedir}/*.sql`).found);
+// 	} else {
+// 		fs.mkdirSync(filedir);
+// 		console.log(`${filedir} created.`);
+// 	}
 
-	_.each(tables, (table) => {
-		const code = generate_sql(table, config);
-		const filepath = `${filedir}/${table.name}.sql`;
-		fs.writeFileSync(filepath, code);
-		console.log(`${filepath} generated.`);
-		_.remove(unnecessaryFiles, f => f === filepath);
-	});
-}
+// 	_.each(tables, (table) => {
+// 		const code = generate_sql(table, config);
+// 		const filepath = `${filedir}/${table.name}.sql`;
+// 		fs.writeFileSync(filepath, code);
+// 		console.log(`${filepath} generated.`);
+// 		_.remove(unnecessaryFiles, f => f === filepath);
+// 	});
+// }
 
 // create interface files: scheme/src/entity/types/*.ts
 // {

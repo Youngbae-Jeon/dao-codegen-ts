@@ -1,11 +1,13 @@
 import { Generation, GenerationOutputOptions } from 'config';
+import fs from 'fs';
 import { GlobSync } from 'glob';
-import { ITable, loadModel } from '../model';
+import { ModelAnalyzer } from '../lib/ModelAnalyzer';
 import _ from 'lodash';
 import path from 'path';
-import fs from 'fs';
 
-import { InterfaceCodeGenerator } from './InterfaceCodeGenenerator';
+import { Table } from '../lib/table';
+import { loadModel, ModelDefinition } from '../model';
+import { InterfaceCodeGenerator } from '../lib/InterfaceCodeGenenerator';
 
 export async function executeAllGenerations(generations: Generation[]): Promise<{interface_files: number, dao_files: number, sql_files: number}[]> {
 	return Promise.all(generations.map(executeGeneration));
@@ -31,18 +33,16 @@ function listFiles(files: string[]): string[] {
 }
 
 async function executeGenerationForFile(file: string, generation: Generation): Promise<{interface_file?: string, dao_file?: string, sql_file?: string}> {
-	const model = await loadModel(file);
 	const generated: {interface_file?: string, dao_file?: string, sql_file?: string} = {};
 
+	const model= await loadModel(file);
 	const codes = await generateCodes(model, generation)
 	if (codes.interface) {
 		generated.interface_file = writeOutput(codes.interface, generation.interface!.output);
 	}
-
 	if (codes.dao) {
 		// TODO generate DAO
 	}
-
 	if (codes.sql) {
 		// TODO generate SQL
 	}
@@ -52,11 +52,12 @@ async function executeGenerationForFile(file: string, generation: Generation): P
 
 type Generated = {name: string, content: string};
 
-async function generateCodes(model: ITable, generation: Generation): Promise<{interface?: Generated, dao?: Generated, sql?: Generated}> {
+export async function generateCodes(model: ModelDefinition, generation: Generation): Promise<{interface?: Generated, dao?: Generated, sql?: Generated}> {
+	const table = new ModelAnalyzer(model).analyze();
 	const result: {interface?: Generated, dao?: Generated, sql?: Generated} = {};
 
 	if (generation.interface) {
-		result.interface = new InterfaceCodeGenerator(model, generation.interface.name).generate();
+		result.interface = new InterfaceCodeGenerator(table, generation.interface.name).generate();
 	}
 
 	return result;

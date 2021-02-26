@@ -77,7 +77,6 @@ export class ModulesCoder {
 			makeCode(relatives, code);
 		}
 
-		code.add('');
 		return code.toString();
 	}
 }
