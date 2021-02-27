@@ -4,7 +4,6 @@ import { Table } from './table';
 import { isPrimativeType, upperCamelCase } from './utils';
 
 export class InterfaceCodeGenerator {
-
 	private name: string;
 
 	constructor(private table: Table, private options?: {prefix?: string, suffix?: string}) {

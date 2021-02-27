@@ -43,7 +43,7 @@ describe('기본 모델 테스트', () => {
 			files: ['user.yaml'],
 			interface: {
 				output: {
-					dir: '/tmp/dao-codegen-ts'
+					dir: '/tmp/dao-codegen-ts/interfaces'
 				}
 			}
 		});
@@ -74,6 +74,30 @@ export interface User extends UserData {
 	/** 사용자ID */
 	id: number;
 }
+`.trimLeft()
+		);
+	});
+
+	it('SQL이 정상적으로 생성되어야 함', async () => {
+		const generated = await generateCodes(model, {
+			files: ['user.yaml'],
+			sql: {
+				output: {
+					dir: '/tmp/dao-codegen-ts/sqls'
+				}
+			}
+		});
+		expect(generated).to.have.property('sql');
+		expect(generated.sql).to.have.property('name', 'user');
+		expect(generated.sql).to.have.property('content', `
+DROP TABLE IF EXISTS user;
+CREATE TABLE user(
+	id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, -- 사용자ID
+	name CHAR(30) NOT NULL, -- 이름
+	gender CHAR(1) NOT NULL, -- 성별
+	adult TINYINT NOT NULL,
+	addr TEXT -- 주소
+);
 `.trimLeft()
 		);
 	});

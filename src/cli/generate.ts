@@ -1,13 +1,13 @@
 import { Generation, GenerationOutputOptions } from 'config';
 import fs from 'fs';
 import { GlobSync } from 'glob';
-import { ModelAnalyzer } from '../lib/ModelAnalyzer';
 import _ from 'lodash';
 import path from 'path';
 
-import { Table } from '../lib/table';
-import { loadModel, ModelDefinition } from '../model';
 import { InterfaceCodeGenerator } from '../lib/InterfaceCodeGenenerator';
+import { ModelAnalyzer } from '../lib/ModelAnalyzer';
+import { SqlCodeGenerator } from '../lib/SqlCodeGenerator';
+import { loadModel, ModelDefinition } from '../model';
 
 export async function executeAllGenerations(generations: Generation[]): Promise<{interface_files: number, dao_files: number, sql_files: number}[]> {
 	return Promise.all(generations.map(executeGeneration));
@@ -41,10 +41,10 @@ async function executeGenerationForFile(file: string, generation: Generation): P
 		generated.interface_file = writeOutput(codes.interface, generation.interface!.output);
 	}
 	if (codes.dao) {
-		// TODO generate DAO
+		generated.dao_file = writeOutput(codes.dao, generation.dao!.output);
 	}
 	if (codes.sql) {
-		// TODO generate SQL
+		generated.sql_file = writeOutput(codes.sql, generation.sql!.output);
 	}
 
 	return generated;
@@ -58,6 +58,9 @@ export async function generateCodes(model: ModelDefinition, generation: Generati
 
 	if (generation.interface) {
 		result.interface = new InterfaceCodeGenerator(table, generation.interface.name).generate();
+	}
+	if (generation.sql) {
+		result.sql = new SqlCodeGenerator(table, generation.sql.tableName).generate();
 	}
 
 	return result;

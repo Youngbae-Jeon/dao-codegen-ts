@@ -58,4 +58,28 @@ export interface ProductVariant extends ProductVariantData {
 `.trimLeft()
 		);
 	});
+
+	it('SQL이 정상적으로 생성되어야 함', async () => {
+		const generated = await generateCodes(model, {
+			files: ['product_variant.yaml'],
+			sql: {
+				output: {
+					dir: '/tmp/dao-codegen-ts/sqls'
+				}
+			}
+		});
+		expect(generated).to.have.property('sql');
+		expect(generated.sql).to.have.property('name', 'product_variant');
+		expect(generated.sql).to.have.property('content', `
+DROP TABLE IF EXISTS product_variant;
+CREATE TABLE product_variant(
+	product_no INT UNSIGNED NOT NULL, -- 상품번호
+	variant_no INT UNSIGNED NOT NULL, -- 품목번호
+	color CHAR(20), -- 색상
+	size CHAR(10), -- 사이즈
+	PRIMARY KEY(product_no, variant_no)
+);
+`.trimLeft()
+		);
+	});
 });

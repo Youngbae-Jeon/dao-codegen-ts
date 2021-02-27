@@ -17,7 +17,7 @@ export interface Column {
 	description?: string;
 	type: string;
 	notNull?: boolean;
-	solePrimaryKey?: boolean;
+	primaryKey?: boolean | 'sole';
 	autoIncrement?: boolean;
 	propertyName: string;
 	propertyType: string;
