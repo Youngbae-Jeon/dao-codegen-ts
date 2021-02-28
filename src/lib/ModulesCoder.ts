@@ -44,7 +44,7 @@ export class ModulesCoder {
 		}
 	}
 
-	toString(): string {
+	getCode(): JsCoder {
 		const makeCode = (importingList: Importing[], code: JsCoder) => {
 			importingList = _.sortBy(importingList, 'from');
 
@@ -66,17 +66,18 @@ export class ModulesCoder {
 
 		let [relatives, absolutes] = _.partition(this.importingList, (importing) => { return importing.module.startsWith('.'); });
 
-		const code = new JsCoder();
+		const coder = new JsCoder();
 
 		if (absolutes.length) {
-			makeCode(absolutes, code);
-			if (relatives.length) code.add('');
+			makeCode(absolutes, coder);
+			if (relatives.length) coder.add('');
 		}
 
 		if (relatives.length) {
-			makeCode(relatives, code);
+			makeCode(relatives, coder);
 		}
 
-		return code.toString();
+		if (coder.length()) coder.add('');
+		return coder;
 	}
 }

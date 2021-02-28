@@ -13,37 +13,32 @@ export class JsCoder {
 	private lineList: Line[] = [];
 	private tabCount: number = 0;
 
-	add(...lines: string[]) {
-		for (let line of lines) {
+	add(...lines: Array<string | JsCoder>) {
+		for (const line of lines) {
 			if (_.isString(line)) {
-				line = line.replace(/^[\t\r\n]*/, '').replace(/[\t\r\n]*$/, '');
-				if (line.includes('\n')) {
-					_.each(line.split('\n'), (line) => {
-						this.addText(line);
-					});
-				} else {
-					this.addText(line);
-				}
-			}
+				this.addString(line);
+
+			} else if (line instanceof JsCoder) {
+				this.addJsCoder(line);
+
+			} else throw new Error(`Unsupported type: ${typeof line}`);
 		}
 
 		return this;
 	}
 
-	br(times?: number) {
-		if (times) {
-			for (let i = 0; i < times; i++) {
-				this.add('');
-			}
-
+	private addString(line: string) {
+		line = line.replace(/^[\t\r\n]*/, '').replace(/[\t\r\n]*$/, '');
+		if (line.includes('\n')) {
+			_.each(line.split('\n'), (line) => {
+				this.addLine(line);
+			});
 		} else {
-			this.add('');
+			this.addLine(line);
 		}
-
-		return this;
 	}
 
-	private addText(text: string) {
+	private addLine(text: string) {
 		text = text.replace(/^[\t\r\n]*/, '').replace(/[\t\r\n]*$/, '')
 
 		const openers = text.match(/[\{\(]/g);
@@ -70,6 +65,27 @@ export class JsCoder {
 		} else {
 			this.lineList.push([this.tabCount, text]);
 		}
+	}
+
+	private addJsCoder(js: JsCoder) {
+		const lineList = this.lineList;
+		const tabCount = this.tabCount;
+		js.lineList.forEach(([addTabCount, text]) => {
+			lineList.push([tabCount + addTabCount, text]);
+		});
+	}
+
+	br(times?: number) {
+		if (times) {
+			for (let i = 0; i < times; i++) {
+				this.add('');
+			}
+
+		} else {
+			this.add('');
+		}
+
+		return this;
 	}
 
 	tab(line?: string) {

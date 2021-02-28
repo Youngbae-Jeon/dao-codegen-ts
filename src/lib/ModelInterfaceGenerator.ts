@@ -3,47 +3,47 @@ import { ModulesCoder } from './ModulesCoder';
 import { Table } from './table';
 import { isPrimativeType, upperCamelCase } from './utils';
 
-export class InterfaceCodeGenerator {
+export class ModelInterfaceGenerator {
 	private name: string;
 
 	constructor(private table: Table, private options?: {dataTypeName?: {prefix?: string, suffix?: string}}) {
 		this.name = upperCamelCase(`${options?.dataTypeName?.prefix || ''}_${table.modelName || table.name}_${options?.dataTypeName?.suffix || ''}`);
 	}
 	
-	generate(modules: ModulesCoder): string[] {
-		const js = new JsCoder();
+	generate(modules: ModulesCoder): JsCoder {
+		const coder = new JsCoder();
 		this.writeImports(modules);
 
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 	
 		// interface ~Data
-		js.add(`export interface ${this.name}Data {`);
+		coder.add(`export interface ${this.name}Data {`);
 		table.columns.forEach(column => {
 			if (!primaryKeyColumns.includes(column.name)) {
-				this.writeComment(column, js);
+				this.writeComment(column, coder);
 				if (column.notNull) {
-					js.add(`${column.propertyName}: ${column.propertyType};`);
+					coder.add(`${column.propertyName}: ${column.propertyType};`);
 				} else {
-					js.add(`${column.propertyName}?: ${column.propertyType} | null;`);
+					coder.add(`${column.propertyName}?: ${column.propertyType} | null;`);
 				}
 			}
 		});
-		js.add('}');
-		js.add('');
+		coder.add('}');
+		coder.add('');
 	
 		// interface
-		this.writeComment(table, js);
-		js.add(`export interface ${this.name} extends ${this.name}Data {`);
+		this.writeComment(table, coder);
+		coder.add(`export interface ${this.name} extends ${this.name}Data {`);
 		primaryKeyColumns.forEach(name => {
 			const column = table.columns.find(column => column.name === name)!;
-			this.writeComment(column, js);
-			js.add(`${column.propertyName}: ${column.propertyType};`);
+			this.writeComment(column, coder);
+			coder.add(`${column.propertyName}: ${column.propertyType};`);
 		});
-		js.add('}');
-		js.add('');
+		coder.add('}');
+		coder.add('');
 
-		return js.getLines();
+		return coder;
 	}
 
 	private writeImports(mc: ModulesCoder) {

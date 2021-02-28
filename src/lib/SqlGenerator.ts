@@ -1,14 +1,11 @@
-import { write } from 'fs';
 import _ from 'lodash';
+
 import { Generation } from '../config';
-import { JsCoder } from './JsCoder';
-import { ModulesCoder } from './ModulesCoder';
 import { Table } from './table';
-import { isPrimativeType, upperCamelCase } from './utils';
 
 type Phrase = {expr: string, comment?: string};
 
-export class SqlCodeGenerator {
+export class SqlGenerator {
 	private name: string;
 
 	constructor(private table: Table, private options?: Generation['sql']) {

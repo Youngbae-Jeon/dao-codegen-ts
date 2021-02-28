@@ -4,10 +4,9 @@ import { GlobSync } from 'glob';
 import _ from 'lodash';
 import path from 'path';
 
-import { InterfaceCodeGenerator } from '../lib/InterfaceCodeGenenerator';
 import { ModelAnalyzer } from '../lib/ModelAnalyzer';
-import { SqlCodeGenerator } from '../lib/SqlCodeGenerator';
-import { TsCodeGenerator } from '../lib/TsCodeGenerator';
+import { SqlGenerator } from '../lib/SqlGenerator';
+import { TsGenerator } from '../lib/TsGenerator';
 import { loadModel, ModelDefinition } from '../model';
 
 export async function executeAllGenerations(generations: Generation[]): Promise<{interface_files: number, dao_files: number, sql_files: number}[]> {
@@ -55,10 +54,10 @@ export async function generateCodes(model: ModelDefinition, generation: Generati
 	const result: {ts?: Generated, sql?: Generated} = {};
 
 	if (generation.ts) {
-		result.ts = new TsCodeGenerator(table, generation.ts).generate();
+		result.ts = new TsGenerator(table, generation.ts).generate();
 	}
 	if (generation.sql) {
-		result.sql = new SqlCodeGenerator(table, generation.sql).generate();
+		result.sql = new SqlGenerator(table, generation.sql).generate();
 	}
 
 	return result;

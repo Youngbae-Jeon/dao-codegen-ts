@@ -19,6 +19,7 @@ export interface GenerationOutputOptions {
 export interface Generation {
 	files: string[];
 	ts?: {
+		dataTypeOnly?: boolean;
 		dataTypeName?: TargetNameOptions;
 		daoClassName?: TargetNameOptions;
 		output: GenerationOutputOptions;

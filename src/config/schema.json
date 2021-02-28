@@ -33,6 +33,7 @@
 					"ts": {
 						"type": "object",
 						"properties": {
+							"dataTypeOnly": { "type": "boolean"},
 							"dataTypeName": { "$ref": "#/definitions/TargetNameOptions" },
 							"daoClassName": { "$ref": "#/definitions/TargetNameOptions" },
 							"output": { "$ref": "#/definitions/GenerationOutputOptions" }
