@@ -30,18 +30,11 @@
 						"type": "array",
 						"items": { "type": "string" }
 					},
-					"interface": {
+					"ts": {
 						"type": "object",
 						"properties": {
-							"name": { "$ref": "#/definitions/TargetNameOptions" },
-							"output": { "$ref": "#/definitions/GenerationOutputOptions" }
-						},
-						"required": ["output"]
-					},
-					"dao": {
-						"type": "object",
-						"properties": {
-							"className": { "$ref": "#/definitions/TargetNameOptions" },
+							"dataTypeName": { "$ref": "#/definitions/TargetNameOptions" },
+							"daoClassName": { "$ref": "#/definitions/TargetNameOptions" },
 							"output": { "$ref": "#/definitions/GenerationOutputOptions" }
 						},
 						"required": ["output"]

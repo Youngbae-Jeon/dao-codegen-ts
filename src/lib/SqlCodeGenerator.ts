@@ -1,5 +1,6 @@
 import { write } from 'fs';
 import _ from 'lodash';
+import { Generation } from '../config';
 import { JsCoder } from './JsCoder';
 import { ModulesCoder } from './ModulesCoder';
 import { Table } from './table';
@@ -10,8 +11,8 @@ type Phrase = {expr: string, comment?: string};
 export class SqlCodeGenerator {
 	private name: string;
 
-	constructor(private table: Table, private options?: {prefix?: string, suffix?: string}) {
-		this.name = `${options?.prefix || ''}${table.name}${options?.suffix || ''}`;
+	constructor(private table: Table, private options?: Generation['sql']) {
+		this.name = `${options?.tableName?.prefix || ''}${table.name}${options?.tableName?.suffix || ''}`;
 	}
 
 	generate(): { name: string, content: string } {

@@ -5,6 +5,11 @@ import schema from './schema.json';
 import yaml from 'yaml';
 import Ajv from 'ajv';
 
+export interface TargetNameOptions {
+	prefix?: string;
+	suffix?: string;
+}
+
 export interface GenerationOutputOptions {
 	dir: string;
 	prefix?: string;
@@ -13,25 +18,13 @@ export interface GenerationOutputOptions {
 
 export interface Generation {
 	files: string[];
-	interface?: {
-		name?: {
-			prefix?: string;
-			suffix?: string;
-		};
-		output: GenerationOutputOptions;
-	},
-	dao?: {
-		className?: {
-			prefix?: string;
-			suffix?: string;
-		};
+	ts?: {
+		dataTypeName?: TargetNameOptions;
+		daoClassName?: TargetNameOptions;
 		output: GenerationOutputOptions;
 	}
 	sql?: {
-		tableName?: {
-			prefix?: string;
-			suffix?: string;
-		};
+		tableName?: TargetNameOptions;
 		output: GenerationOutputOptions;
 	}
 }

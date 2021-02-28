@@ -7,6 +7,7 @@ import path from 'path';
 import { InterfaceCodeGenerator } from '../lib/InterfaceCodeGenenerator';
 import { ModelAnalyzer } from '../lib/ModelAnalyzer';
 import { SqlCodeGenerator } from '../lib/SqlCodeGenerator';
+import { TsCodeGenerator } from '../lib/TsCodeGenerator';
 import { loadModel, ModelDefinition } from '../model';
 
 export async function executeAllGenerations(generations: Generation[]): Promise<{interface_files: number, dao_files: number, sql_files: number}[]> {
@@ -37,11 +38,8 @@ async function executeGenerationForFile(file: string, generation: Generation): P
 
 	const model= await loadModel(file);
 	const codes = await generateCodes(model, generation)
-	if (codes.interface) {
-		generated.interface_file = writeOutput(codes.interface, generation.interface!.output);
-	}
-	if (codes.dao) {
-		generated.dao_file = writeOutput(codes.dao, generation.dao!.output);
+	if (codes.ts) {
+		generated.interface_file = writeOutput(codes.ts, generation.ts!.output);
 	}
 	if (codes.sql) {
 		generated.sql_file = writeOutput(codes.sql, generation.sql!.output);
@@ -52,15 +50,15 @@ async function executeGenerationForFile(file: string, generation: Generation): P
 
 type Generated = {name: string, content: string};
 
-export async function generateCodes(model: ModelDefinition, generation: Generation): Promise<{interface?: Generated, dao?: Generated, sql?: Generated}> {
+export async function generateCodes(model: ModelDefinition, generation: Generation): Promise<{ts?: Generated, sql?: Generated}> {
 	const table = new ModelAnalyzer(model).analyze();
-	const result: {interface?: Generated, dao?: Generated, sql?: Generated} = {};
+	const result: {ts?: Generated, sql?: Generated} = {};
 
-	if (generation.interface) {
-		result.interface = new InterfaceCodeGenerator(table, generation.interface.name).generate();
+	if (generation.ts) {
+		result.ts = new TsCodeGenerator(table, generation.ts).generate();
 	}
 	if (generation.sql) {
-		result.sql = new SqlCodeGenerator(table, generation.sql.tableName).generate();
+		result.sql = new SqlCodeGenerator(table, generation.sql).generate();
 	}
 
 	return result;

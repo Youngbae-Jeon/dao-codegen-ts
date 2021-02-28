@@ -10,8 +10,8 @@ function tabs(tabCount: number): string {
 type Line = [number, string];
 
 export class JsCoder {
-	lineList: Line[] = [];
-	tabCount: number = 0;
+	private lineList: Line[] = [];
+	private tabCount: number = 0;
 
 	add(...lines: string[]) {
 		for (let line of lines) {
@@ -84,13 +84,21 @@ export class JsCoder {
 		return this;
 	}
 
-	toString(): string {
+	length(): number {
+		return this.lineList.length
+	}
+
+	getLines(): string[] {
 		return this.lineList.map(([tabCount, text]) => {
 			if (text) {
 				return tabs(tabCount) + text;
 			} else {
 				return '';
 			}
-		}).join('\n');
+		});
+	}
+
+	toString(): string {
+		return this.getLines().join('\n');
 	}
 }
