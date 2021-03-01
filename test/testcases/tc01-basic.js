@@ -38,7 +38,7 @@ describe('기본 모델 테스트', () => {
 		}
 	};
 
-	it('인터페이스가 정상적으로 생성되어야 함', async () => {
+	it('타입스크립트 코드가 정상적으로 생성되어야 함', async () => {
 		const generated = await generateCodes(model, {
 			files: ['user.yaml'],
 			ts: {
@@ -73,6 +73,42 @@ export interface UserData {
 export interface User extends UserData {
 	/** 사용자ID */
 	id: number;
+}
+
+export class UserEntity {
+	static harvestData(row: {[name: string]: any}, dest?: any): UserData {
+		if (!dest) dest = {};
+
+		if (_.isString(row.name)) dest.name = row.name;
+		else if (row.name === null || row.name === undefined) throw new Error('row.name cannot be null');
+		else throw new TypeError('Wrong type for row.name');
+
+		if (_.isString(row.gender)) dest.gender = row.gender;
+		else if (row.gender === null || row.gender === undefined) throw new Error('row.gender cannot be null');
+		else throw new TypeError('Wrong type for row.gender');
+
+		if (_.isBoolean(row.adult)) dest.adult = row.adult;
+		else if (_.isNumber(row.adult)) dest.adult = !!row.adult;
+		else if (row.adult === null || row.adult === undefined) throw new Error('row.adult cannot be null');
+		else throw new TypeError('Wrong type for row.adult');
+
+		if (_.isString(row.addr)) dest.addr = row.addr;
+		else if (row.addr === null || row.addr === undefined) row.addr = null;
+		else throw new TypeError('Wrong type for row.addr');
+
+		return dest;
+	}
+
+	static harvest(row: {[name: string]: any}, dest?: any): User {
+		if (!dest) dest = {};
+
+		if (_.isNumber(row.id)) dest.id = row.id;
+		else if (row.id === null || row.id === undefined) throw new Error('row.id cannot be null');
+		else throw new TypeError('Wrong type for row.id');
+
+		this.harvestData(row, dest);
+		return dest;
+	}
 }
 `.trimLeft()
 		);

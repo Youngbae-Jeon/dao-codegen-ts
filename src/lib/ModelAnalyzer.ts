@@ -113,7 +113,10 @@ class ColumnAnalyzer {
 		if (definition.title) column.title = definition.title;
 		if (definition.description) column.description = definition.description;
 		if (this.isNotNull()) column.notNull = true;
-		if (this.primaryKey) column.primaryKey = this.primaryKey;
+		if (this.primaryKey) {
+			column.primaryKey = this.primaryKey;
+			column.notNull = true;
+		}
 		if (this.isAutoIncrement()) column.autoIncrement = true;
 		return column;
 	}

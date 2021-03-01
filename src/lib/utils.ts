@@ -1,4 +1,6 @@
+import { assert } from "console";
 import _ from "lodash";
+import { Column } from "./table";
 
 export function upperCamelCase(str: string): string {
 	return _.upperFirst(_.camelCase(str));

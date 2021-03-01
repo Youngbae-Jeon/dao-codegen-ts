@@ -55,6 +55,37 @@ export interface ProductVariant extends ProductVariantData {
 	/** 품목번호 */
 	variantNo: number;
 }
+
+export class ProductVariantEntity {
+	static harvestData(row: {[name: string]: any}, dest?: any): ProductVariantData {
+		if (!dest) dest = {};
+
+		if (_.isString(row.color)) dest.color = row.color;
+		else if (row.color === null || row.color === undefined) row.color = null;
+		else throw new TypeError('Wrong type for row.color');
+
+		if (_.isString(row.size)) dest.size = row.size;
+		else if (row.size === null || row.size === undefined) row.size = null;
+		else throw new TypeError('Wrong type for row.size');
+
+		return dest;
+	}
+
+	static harvest(row: {[name: string]: any}, dest?: any): ProductVariant {
+		if (!dest) dest = {};
+
+		if (_.isNumber(row.product_no)) dest.productNo = row.product_no;
+		else if (row.product_no === null || row.product_no === undefined) throw new Error('row.product_no cannot be null');
+		else throw new TypeError('Wrong type for row.product_no');
+
+		if (_.isNumber(row.variant_no)) dest.variantNo = row.variant_no;
+		else if (row.variant_no === null || row.variant_no === undefined) throw new Error('row.variant_no cannot be null');
+		else throw new TypeError('Wrong type for row.variant_no');
+
+		this.harvestData(row, dest);
+		return dest;
+	}
+}
 `.trimLeft()
 		);
 	});

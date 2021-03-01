@@ -10,7 +10,7 @@ export class ModelInterfaceGenerator {
 		this.name = upperCamelCase(`${options?.dataTypeName?.prefix || ''}_${table.modelName || table.name}_${options?.dataTypeName?.suffix || ''}`);
 	}
 	
-	generate(modules: ModulesCoder): JsCoder {
+	generate(modules: ModulesCoder): {name: string, code: JsCoder} {
 		const coder = new JsCoder();
 		this.writeImports(modules);
 
@@ -43,7 +43,7 @@ export class ModelInterfaceGenerator {
 		coder.add('}');
 		coder.add('');
 
-		return coder;
+		return { name: this.name, code: coder };
 	}
 
 	private writeImports(mc: ModulesCoder) {

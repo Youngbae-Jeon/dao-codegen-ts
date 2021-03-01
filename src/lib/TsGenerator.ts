@@ -5,6 +5,7 @@ import { JsCoder } from './JsCoder';
 import { ModulesCoder } from './ModulesCoder';
 import { Table } from './table';
 import { upperCamelCase } from './utils';
+import { createBrotliDecompress } from 'zlib';
 
 export class TsGenerator {
 	private name: string;
@@ -16,17 +17,19 @@ export class TsGenerator {
 	generate(): { name: string, content: string } {
 		const modules = new ModulesCoder();
 
-		const interfaceJs = new ModelInterfaceGenerator(this.table, this.options).generate(modules);
+		const { name: dataTypeName, code: interfaceCode} = new ModelInterfaceGenerator(this.table, this.options).generate(modules);
 
-		let classJs: JsCoder | undefined = undefined;
+		let classCode: JsCoder | undefined = undefined;
 		if (!this.options?.dataTypeOnly) {
-			classJs = new DaoClassGenerator(this.table, this.options).generate(modules);
+			const result = new DaoClassGenerator(this.table, { dataTypeName, daoClassName: this.options?.daoClassName }).generate(modules);
+			classCode = result.code;
 		}
 
 		const coder = new JsCoder();
 		this.writeHeader(coder);
 		coder.add(modules.getCode());
-		coder.add(interfaceJs);
+		coder.add(interfaceCode);
+		if (classCode) coder.add(classCode);
 
 		return {
 			name: this.name,
