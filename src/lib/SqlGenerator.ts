@@ -50,7 +50,7 @@ export class SqlGenerator {
 	}
 
 	private generatePrimaryKeyPhrase(): Phrase {
-		return {expr: `PRIMARY KEY(${this.table.primaryKeyColumns.join(', ')})`};
+		return {expr: `PRIMARY KEY(${this.table.primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')})`};
 	}
 
 	private generateIndexPhrases(): Phrase[] {

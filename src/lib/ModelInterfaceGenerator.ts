@@ -20,7 +20,7 @@ export class ModelInterfaceGenerator {
 		// interface ~Data
 		coder.add(`export interface ${this.name}Data {`);
 		table.columns.forEach(column => {
-			if (!primaryKeyColumns.includes(column.name)) {
+			if (!primaryKeyColumns.find(pkcolumn => pkcolumn.name === column.name)) {
 				this.writeComment(column, coder);
 				if (column.notNull) {
 					coder.add(`${column.propertyName}: ${column.propertyType};`);
@@ -35,8 +35,8 @@ export class ModelInterfaceGenerator {
 		// interface
 		this.writeComment(table, coder);
 		coder.add(`export interface ${this.name} extends ${this.name}Data {`);
-		primaryKeyColumns.forEach(name => {
-			const column = table.columns.find(column => column.name === name)!;
+		primaryKeyColumns.forEach(pkcolumn => {
+			const column = table.columns.find(column => column.name === pkcolumn.name)!;
 			this.writeComment(column, coder);
 			coder.add(`${column.propertyName}: ${column.propertyType};`);
 		});

@@ -11,7 +11,7 @@ export class ModelAnalyzer {
 		return this.model.name || upperCamelCase(this.model.table);
 	}
 
-	private findPrimaryKeyColumns(): string[] {
+	private findPrimaryKeyColumnNames(): string[] {
 		const model = this.model;
 		if (model.primaryKey) {
 			model.primaryKey.forEach((name) => {
@@ -29,14 +29,16 @@ export class ModelAnalyzer {
 	}
 
 	analyze(): Table {
-		const primaryKeyColumns = this.findPrimaryKeyColumns();
-		if (!primaryKeyColumns.length) throw new Error(`Model should have a primary key.`);
+		const primaryKeyColumnNames = this.findPrimaryKeyColumnNames();
+		if (!primaryKeyColumnNames.length) throw new Error(`Model should have a primary key.`);
 
 		const model = this.model;
+		const columns = this.analyzeColumns(primaryKeyColumnNames);
+		const primaryKeyColumns = primaryKeyColumnNames.map(columnName => columns.find(column => column.name === columnName)!);
 		const table: Table = {
 			name: model.table,
 			modelName: this.getName(),
-			columns: this.analyzeColumns(primaryKeyColumns),
+			columns,
 			primaryKeyColumns
 		};
 		if (model.title) table.title = model.title;

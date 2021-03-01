@@ -4,7 +4,7 @@ export interface Table {
 	title?: string;
 	description?: string;
 	columns: Column[];
-	primaryKeyColumns: string[];
+	primaryKeyColumns: Column[];
 	indexes?: {name: string, with: string[], unique: boolean}[];
 	imports?: {
 		[module: string]: string[]

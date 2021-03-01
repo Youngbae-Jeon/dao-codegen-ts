@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { JsCoder } from "./JsCoder";
 import { ModulesCoder } from "./ModulesCoder";
 import { Column, Table } from "./table";
@@ -6,23 +7,26 @@ import { isPrimativeType, upperCamelCase } from "./utils";
 export class DaoClassGenerator {
 	private name: string;
 
-	constructor(private table: Table, private options?: {dataTypeName: string, daoClassName?: {prefix?: string, suffix?: string}}) {
-		this.name = upperCamelCase(`${options?.daoClassName?.prefix || ''}_${table.modelName || table.name}_${options?.daoClassName?.suffix || ''}`);
+	constructor(private table: Table, private options: {dataTypeName: string, daoClassName?: {prefix?: string, suffix?: string}}) {
+		const prefix = _.isString(options.daoClassName?.prefix) ? options.daoClassName?.prefix: '';
+		const suffix = _.isString(options.daoClassName?.suffix) ? options.daoClassName?.suffix : 'Dao';
+		this.name = upperCamelCase(`${prefix}_${table.modelName || table.name}_${suffix}`);
 	}
 
 	generate(modules: ModulesCoder): {name: string, code: JsCoder} {
 		const coder = new JsCoder();
 		this.writeImports(modules);
 
-		const table = this.table;
-		const primaryKeyColumns = table.primaryKeyColumns;
-	
-		coder.add(`export class ${this.name}Entity {`);
-
+		coder.add(`export class ${this.name} {`);
 		this.generateHarvestData(coder);
 		coder.add('');
 		this.generateHarvest(coder);
-
+		coder.add('');
+		this.generateFind(coder);
+		coder.add('');
+		this.generateFindBy(coder);
+		coder.add('');
+		this.generateFetch(coder);
 		coder.add('}');
 
 		if (coder.length()) coder.add('');
@@ -46,6 +50,9 @@ export class DaoClassGenerator {
 				}
 			}
 		}
+
+		mc.importDefault('_', 'lodash');
+		mc.import('Connection', 'mysql2/promise');
 	}
 
 	private findModuleFor(type: string): string | undefined {
@@ -62,11 +69,11 @@ export class DaoClassGenerator {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
-		coder.add(`static harvestData(row: {[name: string]: any}, dest?: any): ${this.options?.dataTypeName}Data {`);
+		coder.add(`static harvestData(row: {[name: string]: any}, dest?: any): ${this.options.dataTypeName}Data {`);
 		coder.add(`if (!dest) dest = {};`);
 		coder.add('');
 
-		table.columns.filter(column => !primaryKeyColumns.includes(column.name)).forEach(column => this.generateHarvestColumn(column, coder));
+		table.columns.filter(column => !primaryKeyColumns.find(pkcolumn => pkcolumn.name === column.name)).forEach(column => this.generateHarvestColumn(column, coder));
 
 		coder.add(`
 			return dest;
@@ -77,11 +84,11 @@ export class DaoClassGenerator {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
-		coder.add(`static harvest(row: {[name: string]: any}, dest?: any): ${this.options?.dataTypeName} {`);
+		coder.add(`static harvest(row: {[name: string]: any}, dest?: any): ${this.options.dataTypeName} {`);
 		coder.add(`if (!dest) dest = {};`);
 		coder.add('');
 
-		table.columns.filter(column => primaryKeyColumns.includes(column.name)).forEach(column => this.generateHarvestColumn(column, coder));
+		table.columns.filter(column => primaryKeyColumns.find(pkcolumn => pkcolumn.name === column.name)).forEach(column => this.generateHarvestColumn(column, coder));
 
 		coder.add(`
 			this.harvestData(row, dest);
@@ -121,7 +128,57 @@ export class DaoClassGenerator {
 			return `else if (row.${column.name} === null || row.${column.name} === undefined) row.${column.propertyName} = null;`;
 		}
 	}
+
 	private throwUnhandledValues(column: Column): string {
 		return `else throw new TypeError('Wrong type for row.${column.name}');`;
+	}
+
+	private generateFind(coder: JsCoder) {
+		const table = this.table;
+		const primaryKeyColumns = table.primaryKeyColumns;
+
+		coder.add(`
+		static async find(${primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ')}, conn: Connection, options?: {for?: 'update'}): Promise<${this.options.dataTypeName} | undefined> {
+			let sql = 'SELECT * FROM ${table.name} WHERE ${primaryKeyColumns.map(pkcolumn => `${pkcolumn.name}=?`).join(' AND ')}';
+			if (options?.for === 'update') sql += ' FOR UPDATE';
+
+			const rows = await conn.query(sql, [${primaryKeyColumns.map(p => p.propertyName).join(', ')}]);
+			if (rows.length) {
+				return this.harvest(row[0]);
+			}
+		}`);
+	}
+
+	private generateFindBy(coder: JsCoder) {
+		coder.add(`
+		static async findAllBy(by: Partial<${this.options.dataTypeName}>, conn: Connection): Promise<${this.options.dataTypeName}[]> {
+			const wheres: string[] = [];
+			const params: any[] = [];
+			const keys = Object.keys(by);
+			for (const key of keys) {
+				const val = (by as any)[key];
+				if (val === undefined || val === null) {
+					wheres.push(\`\${key} IS NULL\`);
+				} else {
+					wheres.push(\`\${key}=?\`);
+					params.push(val);
+				}
+			}
+
+			const rows = await conn.query(\`SELECT * FROM ${this.table.name} WHERE \${wheres.join(' AND ')}\`, params);
+			return rows.map(row => this.harvest(row));
+		}`);
+	}
+
+	private generateFetch(coder: JsCoder) {
+		const table = this.table;
+		const primaryKeyColumns = table.primaryKeyColumns;
+
+		coder.add(`
+		static async fetch(${primaryKeyColumns.map(p => `${p.propertyName}: ${p.propertyType}`).join(', ')}, conn: Connection, options?: {for?: 'update'}): Promise<${this.options.dataTypeName} | undefined> {
+			const found = await this.find(${primaryKeyColumns.map(p => p.propertyName).join(', ')}, conn, options);
+			if (!found) throw new Error(\`No such #${this.options.dataTypeName}{${primaryKeyColumns.map(p => p.propertyName + ': ${' + p.propertyName + '}').join(', ')}}\`);
+			return found;
+		}`);
 	}
 }
