@@ -124,7 +124,7 @@ export class UserDao {
 		}
 	}
 
-	static async findAllBy(by: Partial<User>, conn: Connection): Promise<User[]> {
+	static async filter(by: Partial<User>, conn: Connection): Promise<User[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -146,6 +146,60 @@ export class UserDao {
 		const found = await this.find(id, conn, options);
 		if (!found) throw new Error(\`No such #User{id: \${id}}\`);
 		return found;
+	}
+
+	static async insert(data: UserData, conn: Connection): Promise<User> {
+		const fields: {[name: string]: any} = {};
+		if (data.name === null || data.name === undefined) throw new Error('data.name cannot be null or undefined');
+		else fields.name = data.name;
+
+		if (data.gender === null || data.gender === undefined) throw new Error('data.gender cannot be null or undefined');
+		else fields.gender = data.gender;
+
+		if (data.adult === null || data.adult === undefined) throw new Error('data.adult cannot be null or undefined');
+		else fields.adult = data.adult;
+
+		if (data.addr === null || data.addr === undefined) fields.addr = null;
+		else fields.addr = data.addr;
+
+		await conn.update('INSERT INTO user SET ?', [fields]);
+
+		const rows = await conn.query('SELECT LAST_INSERT_ID() AS id');
+		if (!rows.length) throw new Error('Cannot query LAST_INSERT_ID()');
+		const id = rows[0].id;
+
+		return {...data, id};
+	}
+
+	static async update(origin: User, data: Partial<UserData>, conn: Connection): Promise<User> {
+		if (origin.id === null || origin.id === undefined) throw new Error('Argument origin.id cannot be null or undefined');
+
+		const fields: {[name: string]: any} = {};
+		const updates: Partial<UserData> = {};
+		if (data.name !== undefined) {
+			if (data.name === null) throw new Error('data.name cannot be null or undefined');
+			fields.name = data.name;
+			updates.name = data.name;
+		}
+		if (data.gender !== undefined) {
+			if (data.gender === null) throw new Error('data.gender cannot be null or undefined');
+			fields.gender = data.gender;
+			updates.gender = data.gender;
+		}
+		if (data.adult !== undefined) {
+			if (data.adult === null) throw new Error('data.adult cannot be null or undefined');
+			fields.adult = data.adult;
+			updates.adult = data.adult;
+		}
+		if (data.addr !== undefined) {
+			fields.addr = data.addr;
+			updates.addr = data.addr;
+		}
+		await conn.update(
+			'UPDATE user SET ? WHERE id',
+			[fields, [origin.id]
+		);
+		return Object.assign(origin, updates);
 	}
 }
 `.trimLeft()

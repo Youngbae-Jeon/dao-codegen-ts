@@ -100,7 +100,7 @@ export class ProductVariantDao {
 		}
 	}
 
-	static async findAllBy(by: Partial<ProductVariant>, conn: Connection): Promise<ProductVariant[]> {
+	static async filter(by: Partial<ProductVariant>, conn: Connection): Promise<ProductVariant[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -122,6 +122,47 @@ export class ProductVariantDao {
 		const found = await this.find(productNo, variantNo, conn, options);
 		if (!found) throw new Error(\`No such #ProductVariant{productNo: \${productNo}, variantNo: \${variantNo}}\`);
 		return found;
+	}
+
+	static async insert(productNo: number, variantNo: number, data: ProductVariantData, conn: Connection, options: { onDuplicate?: 'update' }): Promise<ProductVariant> {
+		if (productNo === null || productNo === undefined) throw new Error('Argument productNo cannot be null or undefined');
+		if (variantNo === null || variantNo === undefined) throw new Error('Argument variantNo cannot be null or undefined');
+
+		const fields: {[name: string]: any} = {};
+		if (data.color === null || data.color === undefined) fields.color = null;
+		else fields.color = data.color;
+
+		if (data.size === null || data.size === undefined) fields.size = null;
+		else fields.size = data.size;
+
+		if (options?.onDuplicate === 'update') {
+			await conn.update('INSERT INTO product_variant SET product_no, variant_no, ? ON DUPLICATE KEY UPDATE ?', [productNo, variantNo, fields, fields]);
+		} else {
+			await conn.update('INSERT INTO product_variant SET product_no, variant_no, ?', [productNo, variantNo, fields]);
+		}
+
+		return {...data, productNo, variantNo};
+	}
+
+	static async update(origin: ProductVariant, data: Partial<ProductVariantData>, conn: Connection): Promise<ProductVariant> {
+		if (origin.productNo === null || origin.productNo === undefined) throw new Error('Argument origin.productNo cannot be null or undefined');
+		if (origin.variantNo === null || origin.variantNo === undefined) throw new Error('Argument origin.variantNo cannot be null or undefined');
+
+		const fields: {[name: string]: any} = {};
+		const updates: Partial<ProductVariantData> = {};
+		if (data.color !== undefined) {
+			fields.color = data.color;
+			updates.color = data.color;
+		}
+		if (data.size !== undefined) {
+			fields.size = data.size;
+			updates.size = data.size;
+		}
+		await conn.update(
+			'UPDATE product_variant SET ? WHERE product_no, variant_no',
+			[fields, [origin.productNo, origin.variantNo]
+		);
+		return Object.assign(origin, updates);
 	}
 }
 `.trimLeft()
