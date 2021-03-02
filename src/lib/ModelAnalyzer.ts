@@ -44,6 +44,7 @@ export class ModelAnalyzer {
 		};
 		if (model.title) table.title = model.title;
 		if (model.description) table.description = model.description;
+		if (model.indexes) table.indexes = model.indexes;
 		if (model.imports) table.imports = model.imports;
 
 		return table;

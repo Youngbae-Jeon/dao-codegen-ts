@@ -16,7 +16,7 @@ export class SqlGenerator {
 		const lines: string[] = [];
 
 		lines.push(`DROP TABLE IF EXISTS ${this.name};`);
-		lines.push(`CREATE TABLE ${this.name}(`);
+		lines.push(`CREATE TABLE ${this.name} (`);
 		lines.push(...this.generateTableInnerLines());
 		lines.push(');');
 		lines.push('');
@@ -50,12 +50,15 @@ export class SqlGenerator {
 	}
 
 	private generatePrimaryKeyPhrase(): Phrase {
-		return {expr: `PRIMARY KEY(${this.table.primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')})`};
+		return {expr: `PRIMARY KEY (${this.table.primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')})`};
 	}
 
 	private generateIndexPhrases(): Phrase[] {
 		return _.map(this.table.indexes, (index, i) => {
-			return {expr: `${index.unique ? 'UNIQUE INDEX' : 'INDEX'}(${index.with.join(', ')})`};
+			let expr = index.unique ? 'UNIQUE INDEX' : 'INDEX';
+			if (index.name) expr += ` ${index.name}`
+			expr += ` (${index.with.join(', ')})`;
+			return {expr};
 		});
 	}
 

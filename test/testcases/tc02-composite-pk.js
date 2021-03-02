@@ -23,7 +23,10 @@ describe('복합키 모델 테스트', () => {
 				type: 'char(10)'
 			}
 		},
-		primaryKey: ['product_no', 'variant_no']
+		primaryKey: ['product_no', 'variant_no'],
+		indexes: [
+			{ with: ['product_no', 'color', 'size'], unique: true }
+		]
 	};
 
 	it('인터페이스가 정상적으로 생성되어야 함', async () => {
@@ -180,12 +183,13 @@ export class ProductVariantDao {
 		expect(generated.sql).to.have.property('name', 'product_variant');
 		expect(generated.sql).to.have.property('content', `
 DROP TABLE IF EXISTS product_variant;
-CREATE TABLE product_variant(
+CREATE TABLE product_variant (
 	product_no INT UNSIGNED NOT NULL, -- 상품번호
 	variant_no INT UNSIGNED NOT NULL, -- 품목번호
 	color CHAR(20), -- 색상
 	size CHAR(10), -- 사이즈
-	PRIMARY KEY(product_no, variant_no)
+	PRIMARY KEY (product_no, variant_no),
+	UNIQUE INDEX (product_no, color, size)
 );
 `.trimLeft()
 		);
