@@ -34,16 +34,15 @@ describe('기본 모델 테스트', () => {
 			}
 		},
 		imports: {
-			'../lib/types': ['Gender']
+			'../src/lib/types': ['Gender']
 		}
 	};
 
 	it('타입스크립트 코드가 정상적으로 생성되어야 함', async () => {
-		const generated = await generateCodes(model, {
-			files: ['user.yaml'],
+		const generated = await generateCodes(model, 'model/user.yaml', {
 			ts: {
 				output: {
-					dir: '/tmp/dao-codegen-ts/ts'
+					dir: 'gen/dao'
 				}
 			}
 		});
@@ -57,7 +56,7 @@ describe('기본 모델 테스트', () => {
 import _ from 'lodash';
 import { Connection } from 'mysql2/promise';
 
-import { Gender } from '../lib/types';
+import { Gender } from '../../src/lib/types';
 
 export interface UserData {
 	/** 이름 */
@@ -207,11 +206,10 @@ export class UserDao {
 	});
 
 	it('SQL이 정상적으로 생성되어야 함', async () => {
-		const generated = await generateCodes(model, {
-			files: ['user.yaml'],
+		const generated = await generateCodes(model, 'model/user.yaml', {
 			sql: {
 				output: {
-					dir: '/tmp/dao-codegen-ts/sql'
+					dir: 'gen/sql'
 				}
 			}
 		});

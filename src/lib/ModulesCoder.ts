@@ -1,4 +1,6 @@
 import _ from 'lodash';
+import path from 'path';
+
 import { JsCoder } from './JsCoder';
 
 interface Importing {
@@ -8,7 +10,10 @@ interface Importing {
 }
 
 export class ModulesCoder {
-	importingList: Importing[] = [];
+	private absoluteImporting: Importing[] = [];
+	private relativeImporting: Importing[] = [];
+
+	constructor(private options?: {baseDir: string, outDir: string}) {}
 
 	private pushTo(types: string | string[], importing: Importing) {
 		const pushType = (type: string) => {
@@ -26,21 +31,34 @@ export class ModulesCoder {
 		}
 	}
 
+	private resolvePath(module: string) {
+		if (this.options && module.startsWith('.')) {
+			console.log('***', this.options.outDir, this.options.baseDir, module);
+			return path.relative(this.options.outDir, path.resolve(this.options.baseDir, module));
+		} else {
+			return module;
+		}
+	}
+
 	importDefault(alias: string, module: string) {
-		const found = _.find(this.importingList, {module});
+		module = this.resolvePath(module);
+		const importings = module.startsWith('.') ? this.relativeImporting : this.absoluteImporting;
+		const found = importings.find(importing => importing.module === module);
 		if (found) {
 			found.defaultAlias = alias;
 		} else {
-			this.importingList.push({defaultAlias: alias, types: [], module});
+			importings.push({defaultAlias: alias, types: [], module: module});
 		}
 	}
 
 	import(types: string | string[], module: string) {
-		const found = _.find(this.importingList, {module});
+		module = this.resolvePath(module);
+		const importings = module.startsWith('.') ? this.relativeImporting : this.absoluteImporting;
+		const found = importings.find(importing => importing.module === module);
 		if (found) {
 			this.pushTo(types, found);
 		} else {
-			this.importingList.push({types: (_.isArray(types) ? types : [types]), module});
+			importings.push({types: (_.isArray(types) ? types : [types]), module: module});
 		}
 	}
 
@@ -64,7 +82,8 @@ export class ModulesCoder {
 			}
 		}
 
-		let [relatives, absolutes] = _.partition(this.importingList, (importing) => { return importing.module.startsWith('.'); });
+		const relatives = this.relativeImporting;
+		const absolutes = this.absoluteImporting;
 
 		const coder = new JsCoder();
 

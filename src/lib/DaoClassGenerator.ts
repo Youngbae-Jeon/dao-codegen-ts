@@ -8,7 +8,7 @@ export class DaoClassGenerator {
 	private name: string;
 	private dataTypeName: string;
 
-	constructor(private table: Table, private options: {dataTypeName: string, daoClassName?: {prefix?: string, suffix?: string}}) {
+	constructor(private table: Table, options: {dataTypeName: string, daoClassName?: {prefix?: string, suffix?: string}}) {
 		const prefix = _.isString(options.daoClassName?.prefix) ? options.daoClassName?.prefix: '';
 		const suffix = _.isString(options.daoClassName?.suffix) ? options.daoClassName?.suffix : 'Dao';
 		this.name = upperCamelCase(`${prefix}_${table.modelName || table.name}_${suffix}`);

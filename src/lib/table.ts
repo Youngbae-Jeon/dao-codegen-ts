@@ -8,7 +8,8 @@ export interface Table {
 	indexes?: {name: string, with: string[], unique: boolean}[];
 	imports?: {
 		[module: string]: string[]
-	}
+	};
+	importBaseDir: string;
 }
 
 export interface Column {

@@ -10,18 +10,18 @@ import { createBrotliDecompress } from 'zlib';
 export class TsGenerator {
 	private name: string;
 
-	constructor(private table: Table, private options?: Generation['ts']) {
-		this.name = upperCamelCase(`${options?.dataTypeName?.prefix || ''}_${table.modelName || table.name}_${options?.dataTypeName?.suffix || ''}`);
+	constructor(private table: Table, private options: Required<Generation>['ts']) {
+		this.name = upperCamelCase(`${options.dataTypeName?.prefix || ''}_${table.modelName || table.name}_${options.dataTypeName?.suffix || ''}`);
 	}
 
 	generate(): { name: string, content: string } {
-		const modules = new ModulesCoder();
+		const modules = new ModulesCoder({baseDir: this.table.importBaseDir, outDir: this.options.output.dir});
 
 		const { name: dataTypeName, code: interfaceCode} = new ModelInterfaceGenerator(this.table, this.options).generate(modules);
 
 		let classCode: JsCoder | undefined = undefined;
-		if (!this.options?.dataTypeOnly) {
-			const result = new DaoClassGenerator(this.table, { dataTypeName, daoClassName: this.options?.daoClassName }).generate(modules);
+		if (!this.options.dataTypeOnly) {
+			const result = new DaoClassGenerator(this.table, { dataTypeName, daoClassName: this.options.daoClassName }).generate(modules);
 			classCode = result.code;
 		}
 

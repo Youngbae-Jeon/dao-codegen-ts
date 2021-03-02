@@ -27,8 +27,7 @@ describe('복합키 모델 테스트', () => {
 	};
 
 	it('인터페이스가 정상적으로 생성되어야 함', async () => {
-		const generated = await generateCodes(model, {
-			files: ['product_variant.yaml'],
+		const generated = await generateCodes(model, 'model/product_variant.yaml', {
 			ts: {
 				output: {
 					dir: '/tmp/dao-codegen-ts/ts'
@@ -170,8 +169,7 @@ export class ProductVariantDao {
 	});
 
 	it('SQL이 정상적으로 생성되어야 함', async () => {
-		const generated = await generateCodes(model, {
-			files: ['product_variant.yaml'],
+		const generated = await generateCodes(model, 'model/product_variant.yaml', {
 			sql: {
 				output: {
 					dir: '/tmp/dao-codegen-ts/sql'
