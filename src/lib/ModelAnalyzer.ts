@@ -5,7 +5,7 @@ import { Column, Table } from './table';
 import { upperCamelCase } from './utils';
 
 export class ModelAnalyzer {
-	constructor(private model: ModelDefinition, private baseDir: string) {}
+	constructor(private model: ModelDefinition, private file: string) {}
 
 	private getName() {
 		return this.model.name || upperCamelCase(this.model.table);
@@ -40,7 +40,7 @@ export class ModelAnalyzer {
 			modelName: this.getName(),
 			columns,
 			primaryKeyColumns,
-			importBaseDir: this.baseDir
+			modelFile: this.file
 		};
 		if (model.title) table.title = model.title;
 		if (model.description) table.description = model.description;

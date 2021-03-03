@@ -9,7 +9,7 @@ export interface Table {
 	imports?: {
 		[module: string]: string[]
 	};
-	importBaseDir: string;
+	modelFile: string;
 }
 
 export interface Column {

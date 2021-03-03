@@ -33,7 +33,6 @@ export class ModulesCoder {
 
 	private resolvePath(module: string) {
 		if (this.options && module.startsWith('.')) {
-			console.log('***', this.options.outDir, this.options.baseDir, module);
 			return path.relative(this.options.outDir, path.resolve(this.options.baseDir, module));
 		} else {
 			return module;

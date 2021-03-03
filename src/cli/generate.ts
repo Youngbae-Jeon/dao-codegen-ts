@@ -52,8 +52,7 @@ async function executeGenerationForModel(model: ModelDefinition, file: string, g
 type Generated = {name: string, content: string};
 
 export async function generateCodes(model: ModelDefinition, file: string, generation: Pick<Generation, 'ts' | 'sql'>): Promise<{ts?: Generated, sql?: Generated}> {
-	const baseDir = path.dirname(file);
-	const table = new ModelAnalyzer(model, baseDir).analyze();
+	const table = new ModelAnalyzer(model, file).analyze();
 	const result: {ts?: Generated, sql?: Generated} = {};
 
 	if (generation.ts) {
