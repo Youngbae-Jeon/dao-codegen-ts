@@ -9,10 +9,6 @@ import { SqlGenerator } from '../lib/SqlGenerator';
 import { TsGenerator } from '../lib/TsGenerator';
 import { loadModel, ModelDefinition } from '../model';
 
-export async function executeAllGenerations(generations: Generation[]): Promise<{ts_files: string[], sql_files: string[]}[]> {
-	return Promise.all(generations.map(executeGeneration));
-}
-
 export async function executeGeneration(generation: Generation): Promise<{ts_files: string[], sql_files: string[]}> {
 	const acc = {ts_files: [] as string[], sql_files: [] as string[]};
 

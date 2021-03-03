@@ -1,10 +1,8 @@
 import Ajv from 'ajv';
 import fs from 'fs';
-import _ from 'lodash';
 import path from 'path';
 import yaml from 'yaml';
 
-import { upperCamelCase } from '../lib/utils';
 import schema from './schema.json';
 
 
@@ -55,27 +53,6 @@ export interface IndexDefinition {
 	with: string[];
 	/** unique 인덱스 여부 */
 	unique?: boolean;
-}
-
-
-
-export interface IField {
-	name: string;
-	type: string;
-	notnull: boolean;
-	auto_increment: boolean;
-	pk: boolean;
-	jstype: string;
-	desc?: string;
-}
-
-export interface ITable {
-	name: string;
-	entityName: string;
-	fields: IField[];
-	constraints?: string[];
-	desc?: string;
-	fetchLock?: boolean;
 }
 
 function getModelFilepath(filename: string) {
