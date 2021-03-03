@@ -42,7 +42,7 @@ describe('복합키 모델 테스트', () => {
 		fs.writeFileSync(prj.modelFile, yaml.stringify(model));
 	});
 
-	it('인터페이스가 정상적으로 생성되어야 함', async () => {
+	it('타입스크립트 코드가 정상적으로 생성되어야 함', async () => {
 		const generated = await executeGeneration({
 			files: [
 				prj.modelDir + '/**/*.yaml'

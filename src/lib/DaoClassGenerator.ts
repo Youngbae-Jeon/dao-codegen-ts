@@ -2,7 +2,8 @@ import _ from "lodash";
 import { JsCoder } from "./JsCoder";
 import { ModulesCoder } from "./ModulesCoder";
 import { Column, Table } from "./table";
-import { isPrimativeType, upperCamelCase } from "./utils";
+import { TypeExpression } from "./TypeExpression";
+import { isKnownGenericType, isPrimativeType, upperCamelCase } from "./utils";
 
 export class DaoClassGenerator {
 	private name: string;
@@ -40,28 +41,23 @@ export class DaoClassGenerator {
 	}
 
 	private writeImports(mc: ModulesCoder) {
-		for (const column of this.table.columns) {
-			const types = column.propertyType.split(/[^a-zA-Z0-9_\.]+/);
-			for (let type of types) {
-				const dotPosition = type.indexOf('.');
-				if (dotPosition >= 0) {
-					type = type.substring(0, dotPosition);
-				} 
+		this.table.columns.forEach(column => {
+			TypeExpression.parse(column.propertyType, (type) => {
+				if (isPrimativeType(type)) return;
+				if (isKnownGenericType(type)) return;
 	
-				if (!isPrimativeType(type)) {
-					const module = this.findModuleFor(type);
-					if (!module) throw new Error(`Cannot resolve non-primative type '${type}'`);
-
-					mc.import(type, module);
-				}
-			}
-		}
+				const module = this.findModuleFor(type);
+				if (!module) throw new Error(`Cannot resolve non-primative type '${type}'`);
+	
+				mc.import(type, module);
+			});
+		});
 
 		mc.importDefault('_', 'lodash');
 		mc.import('Connection', 'mysql2/promise');
 	}
 
-	private findModuleFor(type: string): string | undefined {
+	protected findModuleFor(type: string): string | undefined {
 		const imports = this.table.imports;
 		if (imports) {
 			return Object.keys(imports).find((module) => {

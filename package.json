@@ -4,6 +4,9 @@
 	"description": "Data Access Object code generator for Typescript",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
+	"bin": {
+		"dao-gencode-ts": "./bin/dao-codegen-ts"
+	},
 	"scripts": {
 		"build": "tsc --build tsconfig.json",
 		"test": "npx mocha test/setup test/testcases/**/*.js --bail --exit"

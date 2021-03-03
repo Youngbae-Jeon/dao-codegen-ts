@@ -1,9 +1,10 @@
 import os from 'os';
 import fs from 'fs';
-import path from 'path';
+import path, { dirname, resolve } from 'path';
 import schema from './schema.json';
 import yaml from 'yaml';
 import Ajv from 'ajv';
+import { executeGeneration } from 'cli/generate';
 
 export interface TargetNameOptions {
 	prefix?: string;
@@ -84,11 +85,28 @@ function deleteProperties(obj: {[key: string]: any}) {
 	for (const key in obj) { delete obj[key]; }
 }
 
+function resolveRelativePaths(config: Config, filepath: string) {
+	const cwd = process.cwd();
+	const baseDir = path.dirname(filepath);
+	const relativePath = (filepath: string) => path.relative(cwd, path.resolve(baseDir, filepath));
+
+	config.generations.forEach(generation => {
+		generation.files = generation.files.map(relativePath);
+		if (generation.ts?.output.dir) {
+			generation.ts.output.dir = relativePath(generation.ts.output.dir);
+		}
+		if (generation.sql?.output.dir) {
+			generation.sql.output.dir = relativePath(generation.sql.output.dir);
+		}
+	});
+}
+
 export function initConfig(filename?: string): Config {
 	const filepath = getConfigFilepath(filename);
 
 	deleteProperties(config);
 	readConfigFile(config, filepath);
+	resolveRelativePaths(config, filepath);
 
 	return config;
 }

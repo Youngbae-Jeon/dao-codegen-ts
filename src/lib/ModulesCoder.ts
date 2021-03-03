@@ -2,6 +2,7 @@ import _ from 'lodash';
 import path from 'path';
 
 import { JsCoder } from './JsCoder';
+import { isPrimativeType } from './utils';
 
 interface Importing {
 	defaultAlias?: string;
