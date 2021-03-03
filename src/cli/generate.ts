@@ -9,20 +9,21 @@ import { SqlGenerator } from '../lib/SqlGenerator';
 import { TsGenerator } from '../lib/TsGenerator';
 import { loadModel, ModelDefinition } from '../model';
 
-export async function executeAllGenerations(generations: Generation[]): Promise<{ts_files: number, sql_files: number}[]> {
+export async function executeAllGenerations(generations: Generation[]): Promise<{ts_files: string[], sql_files: string[]}[]> {
 	return Promise.all(generations.map(executeGeneration));
 }
 
-export async function executeGeneration(generation: Generation): Promise<{ts_files: number, sql_files: number}> {
-	const summary = {ts_files: 0, sql_files: 0};
+export async function executeGeneration(generation: Generation): Promise<{ts_files: string[], sql_files: string[]}> {
+	const acc = {ts_files: [] as string[], sql_files: [] as string[]};
 
 	const files = listFiles(generation.files);
 	for (const file of files) {
 		const generated = await executeGenerationForFile(file, generation);
-		if (generated.ts_file) ++summary.ts_files;
-		if (generated.sql_file) ++summary.sql_files;
+
+		if (generated.ts_file) acc.ts_files.push(generated.ts_file);
+		if (generated.sql_file) acc.sql_files.push(generated.sql_file);
 	}
-	return summary;
+	return acc;
 }
 
 function listFiles(files: string[]): string[] {
@@ -33,25 +34,25 @@ function listFiles(files: string[]): string[] {
 
 async function executeGenerationForFile(file: string, generation: Pick<Generation, 'ts' | 'sql'>): Promise<{ts_file?: string, sql_file?: string}> {
 	const model= await loadModel(file);
-	return executeGenerationForModel(model, file, generation);
-}
 
-async function executeGenerationForModel(model: ModelDefinition, file: string, generation: Pick<Generation, 'ts' | 'sql'>): Promise<{ts_file?: string, sql_file?: string}> {
 	const generated: {ts_file?: string, sql_file?: string} = {};
-
 	const codes = await generateCodes(model, file, generation)
 	if (codes.ts) {
-		generated.ts_file = writeOutput(codes.ts, generation.ts!.output);
+		const output = { ...generation.ts!.output };
+		if (!output.suffix) output.suffix = '.ts';
+		generated.ts_file = writeOutput(codes.ts, output);
 	}
 	if (codes.sql) {
-		generated.sql_file = writeOutput(codes.sql, generation.sql!.output);
+		const output = { ...generation.sql!.output };
+		if (!output.suffix) output.suffix = '.sql';
+		generated.sql_file = writeOutput(codes.sql, output);
 	}
 	return generated;
 }
 
 type Generated = {name: string, content: string};
 
-export async function generateCodes(model: ModelDefinition, file: string, generation: Pick<Generation, 'ts' | 'sql'>): Promise<{ts?: Generated, sql?: Generated}> {
+async function generateCodes(model: ModelDefinition, file: string, generation: Pick<Generation, 'ts' | 'sql'>): Promise<{ts?: Generated, sql?: Generated}> {
 	const table = new ModelAnalyzer(model, file).analyze();
 	const result: {ts?: Generated, sql?: Generated} = {};
 
@@ -65,7 +66,9 @@ export async function generateCodes(model: ModelDefinition, file: string, genera
 }
 
 function writeOutput(generated: Generated, options: GenerationOutputOptions): string {
-	const targetPath = path.resolve(options.dir, generated.name);
+	const filename = `${options.prefix || ''}${generated.name}${options.suffix || ''}`;
+	const targetPath = path.resolve(options.dir, filename);
+	fs.mkdirSync(path.dirname(targetPath), {recursive: true});
 	fs.writeFileSync(targetPath, generated.content);
 	return targetPath;
 }

@@ -40,12 +40,7 @@ export class TsGenerator {
 	}
 
 	private resolveModelFilePath() {
-		const modelFile = this.table.modelFile;
-		if (modelFile.startsWith('/')) {
-			return module;
-		} else {
-			return path.relative(this.options.output.dir, modelFile);
-		}
+		return path.relative(this.options.output.dir, this.table.modelFile);
 	}
 
 	private writeHeader(coder: JsCoder) {
