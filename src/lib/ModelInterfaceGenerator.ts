@@ -51,10 +51,14 @@ export class ModelInterfaceGenerator {
 		this.table.columns.forEach(column => {
 			TypeExpression.parse(column.propertyType, (type) => {
 				if (isPrimativeType(type)) return;
-				if (isKnownGenericType(type)) return;
 	
 				const module = this.findModuleFor(type);
-				if (!module) throw new Error(`Cannot resolve non-primative type '${type}'`);
+				if (!module) {
+					if (isKnownGenericType(type)) return;
+
+					throw new Error(`Cannot resolve non-primative type '${type}'`);
+				}
+
 				mc.import(type, module);
 			});
 		});

@@ -21,7 +21,7 @@ describe('복잡한 타입 테스트', () => {
 					title: '배송정보',
 					type: 'JSON',
 					property: {
-						type: '{way: Shipment.Way, pay: number}'
+						type: '{way: Shipment.Way, pay: Shipment.FixedPay | Pick<Shipment.IncrementalPay, \'increment\' | \'step\'> | null}'
 					}
 				},
 				spec: {
@@ -30,11 +30,18 @@ describe('복잡한 타입 테스트', () => {
 					property: {
 						type: 'Array<{title: string, desc: string | number | boolean | Date}>'
 					}
+				},
+				supply: {
+					title: '공급정보',
+					type: 'JSON',
+					property: {
+						type: '{supplier_id: number, price: number | Supply.SOLD_OUT}[]'
+					}
 				}
 			},
 			primaryKey: ['product_no'],
 			imports: {
-				'../src/lib/types': ['Shipment']
+				'../src/lib/types': ['Shipment', 'Supply']
 			}
 		};
 		prj.dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dcg-'))
@@ -66,13 +73,15 @@ describe('복잡한 타입 테스트', () => {
 // This file is generated from model file '../../model/product.yaml'
 // by dao-codegen-ts
 
-import { Shipment } from '../../src/lib/types';
+import { Shipment, Supply } from '../../src/lib/types';
 
 export interface ProductData {
 	/** 배송정보 */
-	shipment?: {way: Shipment.Way, pay: number} | null;
+	shipment?: {way: Shipment.Way, pay: Shipment.FixedPay | Pick<Shipment.IncrementalPay, 'increment' | 'step'> | null} | null;
 	/** 스펙 */
 	spec?: Array<{title: string, desc: string | number | boolean | Date}> | null;
+	/** 공급정보 */
+	supply?: {supplier_id: number, price: number | Supply.SOLD_OUT}[] | null;
 }
 
 /** 상품정보 */
