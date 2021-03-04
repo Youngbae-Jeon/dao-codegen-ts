@@ -20,7 +20,7 @@ export class DaoClassGenerator {
 		const coder = new JsCoder();
 		this.writeImports(modules);
 
-		coder.add(`export class ${this.name} {`);
+		coder.add(`export class ${this.name} extends Dao {`);
 		this.generateHarvestData(coder);
 		coder.add('');
 		this.generateHarvest(coder);
@@ -54,7 +54,8 @@ export class DaoClassGenerator {
 		});
 
 		mc.importDefault('_', 'lodash');
-		mc.import('Connection', 'mysql2/promise');
+		mc.import('Dao', 'dao-codegen-ts');
+		mc.import(['Connection', 'RowDataPacket'], 'mysql2/promise');
 	}
 
 	protected findModuleFor(type: string): string | undefined {
@@ -140,20 +141,20 @@ export class DaoClassGenerator {
 		const primaryKeyColumns = table.primaryKeyColumns;
 		const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
 		coder.add(`
-		static async find(${pkargs}, conn: Connection, options?: {for?: 'update'}): Promise<${this.dataTypeName} | undefined> {
+		static async find(${pkargs}, conn: Pick<Connection, 'query'>, options?: {for?: 'update'}): Promise<${this.dataTypeName} | undefined> {
 			let sql = 'SELECT * FROM ${table.name} WHERE ${primaryKeyColumns.map(pkcolumn => `${pkcolumn.name}=?`).join(' AND ')}';
 			if (options?.for === 'update') sql += ' FOR UPDATE';
 
-			const rows = await conn.query(sql, [${primaryKeyColumns.map(p => p.propertyName).join(', ')}]);
+			const [rows] = await conn.query<RowDataPacket[]>(sql, [${primaryKeyColumns.map(p => p.propertyName).join(', ')}]);
 			if (rows.length) {
-				return this.harvest(row[0]);
+				return this.harvest(rows[0]);
 			}
 		}`);
 	}
 
 	private generateFilter(coder: JsCoder) {
 		coder.add(`
-		static async filter(by: Partial<${this.dataTypeName}>, conn: Connection): Promise<${this.dataTypeName}[]> {
+		static async filter(by: Partial<${this.dataTypeName}>, conn: Pick<Connection, 'query'>): Promise<${this.dataTypeName}[]> {
 			const wheres: string[] = [];
 			const params: any[] = [];
 			const keys = Object.keys(by);
@@ -167,7 +168,7 @@ export class DaoClassGenerator {
 				}
 			}
 
-			const rows = await conn.query(\`SELECT * FROM ${this.table.name} WHERE \${wheres.join(' AND ')}\`, params);
+			const [rows] = await conn.query<RowDataPacket[]>(\`SELECT * FROM ${this.table.name} WHERE \${wheres.join(' AND ')}\`, params);
 			return rows.map(row => this.harvest(row));
 		}`);
 	}
@@ -199,26 +200,26 @@ export class DaoClassGenerator {
 			coder.add('');
 		}
 
-		coder.add(`const fields: {[name: string]: any} = {};`);
+		coder.add(`const params: {[name: string]: any} = {};`);
 		table.columns.filter(column => !column.primaryKey).forEach(column => {
 			if (column.notNull) {
 				coder.add(`if (data.${column.propertyName} === null || data.${column.propertyName} === undefined) throw new Error('data.${column.propertyName} cannot be null or undefined');`);
 			} else {
-				coder.add(`if (data.${column.propertyName} === null || data.${column.propertyName} === undefined) fields.${column.name} = null;`);
+				coder.add(`if (data.${column.propertyName} === null || data.${column.propertyName} === undefined) params.${column.name} = null;`);
 			}
 			if (column.type === 'JSON') {
-				coder.add(`else fields.${column.name} = JSON.stringify(data.${column.propertyName});`);
+				coder.add(`else params.${column.name} = JSON.stringify(data.${column.propertyName});`);
 			} else {
-				coder.add(`else fields.${column.name} = data.${column.propertyName};`);
+				coder.add(`else params.${column.name} = data.${column.propertyName};`);
 			}
 			coder.add('');
 		});
 
 		if (primaryKeyColumns.length === 1 && primaryKeyColumns[0].autoIncrement) {
 			coder.add(`
-			await conn.update('INSERT INTO ${table.name} SET ?', [fields]);
+			await conn.execute('INSERT INTO ${table.name} SET ?', [params]);
 			
-			const rows = await conn.query('SELECT LAST_INSERT_ID() AS ${primaryKeyColumns[0].name}');
+			const [rows] = await conn.query<RowDataPacket[]>('SELECT LAST_INSERT_ID() AS ${primaryKeyColumns[0].name}');
 			if (!rows.length) throw new Error('Cannot query LAST_INSERT_ID()');
 			const ${primaryKeyColumns[0].propertyName} = rows[0].${primaryKeyColumns[0].name};
 			`);
@@ -226,9 +227,9 @@ export class DaoClassGenerator {
 		} else {
 			coder.add(`
 			if (options?.onDuplicate === 'update') {
-				await conn.update('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ? ON DUPLICATE KEY UPDATE ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, fields, fields]);
+				await conn.execute('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ? ON DUPLICATE KEY UPDATE ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params, params]);
 			} else {
-				await conn.update('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, fields]);
+				await conn.execute('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params]);
 			}`);
 		}
 		coder.add('');
@@ -242,14 +243,14 @@ export class DaoClassGenerator {
 		const primaryKeyColumns = table.primaryKeyColumns;
 
 		const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
-		coder.add(`static async update(origin: ${this.dataTypeName}, data: Partial<${this.dataTypeName}Data>, conn: Connection): Promise<${this.dataTypeName}> {`);
+		coder.add(`static async update(origin: ${this.dataTypeName}, data: Partial<${this.dataTypeName}Data>, conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}> {`);
 		primaryKeyColumns.forEach(pkcolumn => {
 			coder.add(`if (origin.${pkcolumn.propertyName} === null || origin.${pkcolumn.propertyName} === undefined) throw new Error('Argument origin.${pkcolumn.propertyName} cannot be null or undefined');`);
 		});
 		coder.add('');
 
 		coder.add(`
-			const fields: {[name: string]: any} = {};
+			const params: {[name: string]: any} = {};
 			const updates: Partial<${this.dataTypeName}Data> = {};
 		`);
 		table.columns.filter(column => !column.primaryKey).forEach(column => {
@@ -257,21 +258,23 @@ export class DaoClassGenerator {
 			if (column.notNull) {
 				coder.add(`if (data.${column.propertyName} === null) throw new Error('data.${column.propertyName} cannot be null or undefined');`);
 				if (column.type === 'JSON') {
-					coder.add(`fields.${column.name} = JSON.stringify(data.${column.propertyName});`);
+					coder.add(`params.${column.name} = JSON.stringify(data.${column.propertyName});`);
 				} else {
-					coder.add(`fields.${column.name} = data.${column.propertyName};`);
+					coder.add(`params.${column.name} = data.${column.propertyName};`);
 				}
 			} else {
-				coder.add(`fields.${column.name} = data.${column.propertyName};`);
+				coder.add(`params.${column.name} = data.${column.propertyName};`);
 			}
 			coder.add(`updates.${column.propertyName} = data.${column.propertyName};`);
 			coder.add('}');
 		});
+		coder.add('');
 
 		coder.add(`
-			await conn.update(
-				'UPDATE ${table.name} SET ? WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}',
-				[fields, [${primaryKeyColumns.map(pkcolumn => 'origin.' + pkcolumn.propertyName).join(', ')}]
+			const {names, values} = this.splitObject(params, {name: (name) => name + '=?'});
+			await conn.execute(
+				\`UPDATE ${table.name} SET \${names.join(', ')} WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + '=?').join(', ')}\`,
+				[...values, ${primaryKeyColumns.map(pkcolumn => 'origin.' + pkcolumn.propertyName).join(', ')}]
 			);
 			return Object.assign(origin, updates);
 		}`);
