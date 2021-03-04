@@ -20,20 +20,22 @@ export class DaoClassGenerator {
 		const coder = new JsCoder();
 		this.writeImports(modules);
 
-		coder.add(`export class ${this.name} extends Dao {`);
-		this.generateHarvestData(coder);
+		coder.add(`export class ${this.name} {`);
+		this.generateStaticHarvestData(coder);
 		coder.add('');
-		this.generateHarvest(coder);
+		this.generateStaticHarvest(coder);
 		coder.add('');
-		this.generateFind(coder);
+		this.generateStaticFind(coder);
 		coder.add('');
-		this.generateFilter(coder);
+		this.generateStaticFilter(coder);
 		coder.add('');
-		this.generateFetch(coder);
+		this.generateStaticFetch(coder);
 		coder.add('');
-		this.generateInsert(coder);
+		this.generateStaticCreate(coder);
 		coder.add('');
-		this.generateUpdate(coder);
+		this.generateStaticUpdate(coder);
+		coder.add('');
+		this.generateStaticDelete(coder);
 		coder.add('}');
 
 		if (coder.length()) coder.add('');
@@ -54,7 +56,6 @@ export class DaoClassGenerator {
 		});
 
 		mc.importDefault('_', 'lodash');
-		mc.import('Dao', 'dao-codegen-ts');
 		mc.import(['Connection', 'RowDataPacket'], 'mysql2/promise');
 	}
 
@@ -68,7 +69,7 @@ export class DaoClassGenerator {
 		}
 	}
 
-	private generateHarvestData(coder: JsCoder) {
+	private generateStaticHarvestData(coder: JsCoder) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
@@ -83,7 +84,7 @@ export class DaoClassGenerator {
 		}`);
 	}
 
-	private generateHarvest(coder: JsCoder) {
+	private generateStaticHarvest(coder: JsCoder) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
@@ -136,7 +137,7 @@ export class DaoClassGenerator {
 		return `else throw new TypeError('Wrong type for row.${column.name}');`;
 	}
 
-	private generateFind(coder: JsCoder) {
+	private generateStaticFind(coder: JsCoder) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 		const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
@@ -152,7 +153,7 @@ export class DaoClassGenerator {
 		}`);
 	}
 
-	private generateFilter(coder: JsCoder) {
+	private generateStaticFilter(coder: JsCoder) {
 		coder.add(`
 		static async filter(by: Partial<${this.dataTypeName}>, conn: Pick<Connection, 'query'>): Promise<${this.dataTypeName}[]> {
 			const wheres: string[] = [];
@@ -173,27 +174,27 @@ export class DaoClassGenerator {
 		}`);
 	}
 
-	private generateFetch(coder: JsCoder) {
+	private generateStaticFetch(coder: JsCoder) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 		const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
 		coder.add(`
-		static async fetch(${pkargs}, conn: Connection, options?: {for?: 'update'}): Promise<${this.dataTypeName} | undefined> {
+		static async fetch(${pkargs}, conn: Pick<Connection, 'query'>, options?: {for?: 'update'}): Promise<${this.dataTypeName} | undefined> {
 			const found = await this.find(${primaryKeyColumns.map(p => p.propertyName).join(', ')}, conn, options);
 			if (!found) throw new Error(\`No such #${this.dataTypeName}{${primaryKeyColumns.map(p => p.propertyName + ': ${' + p.propertyName + '}').join(', ')}}\`);
 			return found;
 		}`);
 	}
 
-	private generateInsert(coder: JsCoder) {
+	private generateStaticCreate(coder: JsCoder) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
 		if (primaryKeyColumns.length === 1 && primaryKeyColumns[0].autoIncrement) {
-			coder.add(`static async insert(data: ${this.dataTypeName}Data, conn: Connection): Promise<${this.dataTypeName}> {`);
+			coder.add(`static async create(data: ${this.dataTypeName}Data, conn: Pick<Connection, 'query'>): Promise<${this.dataTypeName}> {`);
 		} else {
 			const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
-			coder.add(`static async insert(${pkargs}, data: ${this.dataTypeName}Data, conn: Connection, options: { onDuplicate?: 'update' }): Promise<${this.dataTypeName}> {`);
+			coder.add(`static async create(${pkargs}, data: ${this.dataTypeName}Data, conn: Pick<Connection, 'query'>, options: { onDuplicate?: 'update' }): Promise<${this.dataTypeName}> {`);
 			primaryKeyColumns.forEach(pkcolumn => {
 				coder.add(`if (${pkcolumn.propertyName} === null || ${pkcolumn.propertyName} === undefined) throw new Error('Argument ${pkcolumn.propertyName} cannot be null or undefined');`);
 			});
@@ -217,7 +218,7 @@ export class DaoClassGenerator {
 
 		if (primaryKeyColumns.length === 1 && primaryKeyColumns[0].autoIncrement) {
 			coder.add(`
-			await conn.execute('INSERT INTO ${table.name} SET ?', [params]);
+			await conn.query('INSERT INTO ${table.name} SET ?', [params]);
 			
 			const [rows] = await conn.query<RowDataPacket[]>('SELECT LAST_INSERT_ID() AS ${primaryKeyColumns[0].name}');
 			if (!rows.length) throw new Error('Cannot query LAST_INSERT_ID()');
@@ -227,9 +228,9 @@ export class DaoClassGenerator {
 		} else {
 			coder.add(`
 			if (options?.onDuplicate === 'update') {
-				await conn.execute('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ? ON DUPLICATE KEY UPDATE ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params, params]);
+				await conn.query('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ? ON DUPLICATE KEY UPDATE ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params, params]);
 			} else {
-				await conn.execute('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params]);
+				await conn.query('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params]);
 			}`);
 		}
 		coder.add('');
@@ -238,12 +239,11 @@ export class DaoClassGenerator {
 		}`);
 	}
 
-	private generateUpdate(coder: JsCoder) {
+	private generateStaticUpdate(coder: JsCoder) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
-		const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
-		coder.add(`static async update(origin: ${this.dataTypeName}, data: Partial<${this.dataTypeName}Data>, conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}> {`);
+		coder.add(`static async update(origin: ${this.dataTypeName}, data: Partial<${this.dataTypeName}Data>, conn: Pick<Connection, 'query'>): Promise<${this.dataTypeName}> {`);
 		primaryKeyColumns.forEach(pkcolumn => {
 			coder.add(`if (origin.${pkcolumn.propertyName} === null || origin.${pkcolumn.propertyName} === undefined) throw new Error('Argument origin.${pkcolumn.propertyName} cannot be null or undefined');`);
 		});
@@ -271,12 +271,35 @@ export class DaoClassGenerator {
 		coder.add('');
 
 		coder.add(`
-			const {names, values} = this.splitObject(params, {name: (name) => name + '=?'});
-			await conn.execute(
-				\`UPDATE ${table.name} SET \${names.join(', ')} WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + '=?').join(', ')}\`,
-				[...values, ${primaryKeyColumns.map(pkcolumn => 'origin.' + pkcolumn.propertyName).join(', ')}]
+			await conn.query(
+				\`UPDATE ${table.name} SET ? WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + '=?').join(', ')}\`,
+				[params, ${primaryKeyColumns.map(pkcolumn => 'origin.' + pkcolumn.propertyName).join(', ')}]
 			);
 			return Object.assign(origin, updates);
 		}`);
+	}
+
+	private generateStaticDelete(coder: JsCoder) {
+		const table = this.table;
+		const primaryKeyColumns = table.primaryKeyColumns;
+
+		coder.add(`static async delete(origin: ${this.dataTypeName}, conn: Pick<Connection, 'query'>): Promise<void> {`);
+		primaryKeyColumns.forEach(pkcolumn => {
+			coder.add(`if (origin.${pkcolumn.propertyName} === null || origin.${pkcolumn.propertyName} === undefined) throw new Error('Argument origin.${pkcolumn.propertyName} cannot be null or undefined');`);
+		});
+		coder.add('');
+
+		coder.add(`
+			await conn.query(
+				\`DELETE FROM ${table.name} WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + '=?').join(', ')}\`,
+				[${primaryKeyColumns.map(pkcolumn => 'origin.' + pkcolumn.propertyName).join(', ')}]
+			);
+		}`);
+	}
+
+	private generateConstructor(coder: JsCoder) {
+		coder.add(`
+			constructor(protected conn: Pick<Connection, 'query'>) {}
+		`);
 	}
 }
