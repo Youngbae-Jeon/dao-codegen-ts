@@ -63,7 +63,8 @@ describe('복합키 모델 테스트', () => {
 // by dao-codegen-ts
 // --------------------
 import _ from 'lodash';
-import { Connection, RowDataPacket } from 'mysql2/promise';
+import assert from 'assert';
+import mysql, { Connection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 export interface ProductVariantData {
 	/** 색상 */
@@ -110,17 +111,20 @@ export class ProductVariantDao {
 		return dest;
 	}
 
-	static async find(productNo: number, variantNo: number, conn: Pick<Connection, 'query'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
+	static async find(productNo: number, variantNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
 		let sql = 'SELECT * FROM product_variant WHERE product_no=? AND variant_no=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
 
-		const [rows] = await conn.query<RowDataPacket[]>(sql, [productNo, variantNo]);
+		const stmt = mysql.format(sql, [productNo, variantNo]);
+		console.log('ProductVariantDao:', stmt);
+
+		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		if (rows.length) {
 			return this.harvest(rows[0]);
 		}
 	}
 
-	static async filter(by: Partial<ProductVariant>, conn: Pick<Connection, 'query'>): Promise<ProductVariant[]> {
+	static async filter(by: Partial<ProductVariant>, conn: Pick<Connection, 'execute'>): Promise<ProductVariant[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -134,17 +138,20 @@ export class ProductVariantDao {
 			}
 		}
 
-		const [rows] = await conn.query<RowDataPacket[]>(\`SELECT * FROM product_variant WHERE \${wheres.join(' AND ')}\`, params);
+		const stmt = mysql.format(\`SELECT * FROM product_variant WHERE \${wheres.join(' AND ')}\`, params);
+		console.log('ProductVariantDao:', stmt);
+
+		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(productNo: number, variantNo: number, conn: Pick<Connection, 'query'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
+	static async fetch(productNo: number, variantNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
 		const found = await this.find(productNo, variantNo, conn, options);
 		if (!found) throw new Error(\`No such #ProductVariant{productNo: \${productNo}, variantNo: \${variantNo}}\`);
 		return found;
 	}
 
-	static async create(productNo: number, variantNo: number, data: ProductVariantData, conn: Pick<Connection, 'query'>, options: { onDuplicate?: 'update' }): Promise<ProductVariant> {
+	static async create(productNo: number, variantNo: number, data: ProductVariantData, conn: Pick<Connection, 'execute'>, options: { onDuplicate?: 'update' }): Promise<ProductVariant> {
 		if (productNo === null || productNo === undefined) throw new Error('Argument productNo cannot be null or undefined');
 		if (variantNo === null || variantNo === undefined) throw new Error('Argument variantNo cannot be null or undefined');
 
@@ -155,16 +162,19 @@ export class ProductVariantDao {
 		if (data.size === null || data.size === undefined) params.size = null;
 		else params.size = data.size;
 
+		let stmt: string;
 		if (options?.onDuplicate === 'update') {
-			await conn.query('INSERT INTO product_variant SET product_no, variant_no, ? ON DUPLICATE KEY UPDATE ?', [productNo, variantNo, params, params]);
+			stmt = mysql.format('INSERT INTO product_variant SET product_no, variant_no, ? ON DUPLICATE KEY UPDATE ?', [productNo, variantNo, params, params]);
 		} else {
-			await conn.query('INSERT INTO product_variant SET product_no, variant_no, ?', [productNo, variantNo, params]);
+			stmt = mysql.format('INSERT INTO product_variant SET product_no, variant_no, ?', [productNo, variantNo, params]);
 		}
+		console.log('ProductVariantDao:', stmt);
 
+		await conn.execute<ResultSetHeader>(stmt);
 		return {...data, productNo, variantNo};
 	}
 
-	static async update(origin: ProductVariant, data: Partial<ProductVariantData>, conn: Pick<Connection, 'query'>): Promise<ProductVariant> {
+	static async update(origin: ProductVariant, data: Partial<ProductVariantData>, conn: Pick<Connection, 'execute'>): Promise<ProductVariant> {
 		if (origin.productNo === null || origin.productNo === undefined) throw new Error('Argument origin.productNo cannot be null or undefined');
 		if (origin.variantNo === null || origin.variantNo === undefined) throw new Error('Argument origin.variantNo cannot be null or undefined');
 
@@ -179,21 +189,30 @@ export class ProductVariantDao {
 			updates.size = data.size;
 		}
 
-		await conn.query(
+		const stmt = mysql.format(
 			\`UPDATE product_variant SET ? WHERE product_no=?, variant_no=?\`,
 			[params, origin.productNo, origin.variantNo]
 		);
+		console.log('ProductVariantDao:', stmt);
+
+		const [result] = await conn.execute<ResultSetHeader>(stmt);
+		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
+
 		return Object.assign(origin, updates);
 	}
 
-	static async delete(origin: ProductVariant, conn: Pick<Connection, 'query'>): Promise<void> {
+	static async delete(origin: ProductVariant, conn: Pick<Connection, 'execute'>): Promise<void> {
 		if (origin.productNo === null || origin.productNo === undefined) throw new Error('Argument origin.productNo cannot be null or undefined');
 		if (origin.variantNo === null || origin.variantNo === undefined) throw new Error('Argument origin.variantNo cannot be null or undefined');
 
-		await conn.query(
+		const stmt = mysql.format(
 			\`DELETE FROM product_variant WHERE product_no=?, variant_no=?\`,
 			[origin.productNo, origin.variantNo]
 		);
+		console.log('ProductVariantDao:', stmt);
+
+		const [result] = await conn.execute<ResultSetHeader>(stmt);
+		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 	}
 }
 `.trimLeft()

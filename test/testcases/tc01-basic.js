@@ -71,7 +71,8 @@ describe('기본 모델 테스트', () => {
 // by dao-codegen-ts
 // --------------------
 import _ from 'lodash';
-import { Connection, RowDataPacket } from 'mysql2/promise';
+import assert from 'assert';
+import mysql, { Connection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import { Gender } from '../../src/lib/types';
 
@@ -130,17 +131,20 @@ export class UserDao {
 		return dest;
 	}
 
-	static async find(id: number, conn: Pick<Connection, 'query'>, options?: {for?: 'update'}): Promise<User | undefined> {
+	static async find(id: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<User | undefined> {
 		let sql = 'SELECT * FROM user WHERE id=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
 
-		const [rows] = await conn.query<RowDataPacket[]>(sql, [id]);
+		const stmt = mysql.format(sql, [id]);
+		console.log('UserDao:', stmt);
+
+		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		if (rows.length) {
 			return this.harvest(rows[0]);
 		}
 	}
 
-	static async filter(by: Partial<User>, conn: Pick<Connection, 'query'>): Promise<User[]> {
+	static async filter(by: Partial<User>, conn: Pick<Connection, 'execute'>): Promise<User[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -154,17 +158,20 @@ export class UserDao {
 			}
 		}
 
-		const [rows] = await conn.query<RowDataPacket[]>(\`SELECT * FROM user WHERE \${wheres.join(' AND ')}\`, params);
+		const stmt = mysql.format(\`SELECT * FROM user WHERE \${wheres.join(' AND ')}\`, params);
+		console.log('UserDao:', stmt);
+
+		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(id: number, conn: Pick<Connection, 'query'>, options?: {for?: 'update'}): Promise<User | undefined> {
+	static async fetch(id: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<User | undefined> {
 		const found = await this.find(id, conn, options);
 		if (!found) throw new Error(\`No such #User{id: \${id}}\`);
 		return found;
 	}
 
-	static async create(data: UserData, conn: Pick<Connection, 'query'>): Promise<User> {
+	static async create(data: UserData, conn: Pick<Connection, 'execute'>): Promise<User> {
 		const params: {[name: string]: any} = {};
 		if (data.name === null || data.name === undefined) throw new Error('data.name cannot be null or undefined');
 		else params.name = data.name;
@@ -178,16 +185,15 @@ export class UserDao {
 		if (data.addr === null || data.addr === undefined) params.addr = null;
 		else params.addr = data.addr;
 
-		await conn.query('INSERT INTO user SET ?', [params]);
+		const stmt = mysql.format('INSERT INTO user SET ?', [params]);
+		console.log('UserDao:', stmt);
 
-		const [rows] = await conn.query<RowDataPacket[]>('SELECT LAST_INSERT_ID() AS id');
-		if (!rows.length) throw new Error('Cannot query LAST_INSERT_ID()');
-		const id = rows[0].id;
-
+		const [result] = await conn.execute<ResultSetHeader>(stmt);
+		const id = result.insertId;
 		return {...data, id};
 	}
 
-	static async update(origin: User, data: Partial<UserData>, conn: Pick<Connection, 'query'>): Promise<User> {
+	static async update(origin: User, data: Partial<UserData>, conn: Pick<Connection, 'execute'>): Promise<User> {
 		if (origin.id === null || origin.id === undefined) throw new Error('Argument origin.id cannot be null or undefined');
 
 		const params: {[name: string]: any} = {};
@@ -212,20 +218,29 @@ export class UserDao {
 			updates.addr = data.addr;
 		}
 
-		await conn.query(
+		const stmt = mysql.format(
 			\`UPDATE user SET ? WHERE id=?\`,
 			[params, origin.id]
 		);
+		console.log('UserDao:', stmt);
+
+		const [result] = await conn.execute<ResultSetHeader>(stmt);
+		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
+
 		return Object.assign(origin, updates);
 	}
 
-	static async delete(origin: User, conn: Pick<Connection, 'query'>): Promise<void> {
+	static async delete(origin: User, conn: Pick<Connection, 'execute'>): Promise<void> {
 		if (origin.id === null || origin.id === undefined) throw new Error('Argument origin.id cannot be null or undefined');
 
-		await conn.query(
+		const stmt = mysql.format(
 			\`DELETE FROM user WHERE id=?\`,
 			[origin.id]
 		);
+		console.log('UserDao:', stmt);
+
+		const [result] = await conn.execute<ResultSetHeader>(stmt);
+		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 	}
 }
 `.trimLeft()
