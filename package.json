@@ -1,5 +1,5 @@
 {
-	"name": "dao-codegen-ts",
+	"name": "@youngbae-jeon/dao-codegen-ts",
 	"version": "1.0.0",
 	"description": "Data Access Object code generator for Typescript",
 	"main": "./dist/index.js",
