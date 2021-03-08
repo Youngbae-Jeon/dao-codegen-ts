@@ -49,7 +49,7 @@ async function executeGenerationForFile(file: string, generation: Pick<Generatio
 type Generated = {name: string, content: string};
 
 async function generateCodes(model: ModelDefinition, file: string, generation: Pick<Generation, 'ts' | 'sql'>): Promise<{ts?: Generated, sql?: Generated}> {
-	const table = new ModelAnalyzer(model, file).analyze();
+	const table = new ModelAnalyzer(model, file, {propertyNameStyle: generation.ts?.propertyNameStyle}).analyze();
 	const result: {ts?: Generated, sql?: Generated} = {};
 
 	if (generation.ts) {

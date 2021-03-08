@@ -87,7 +87,7 @@ export interface ProductData {
 /** 상품정보 */
 export interface Product extends ProductData {
 	/** 상품번호 */
-	productNo: number;
+	product_no: number;
 }
 `.trimLeft()
 		);

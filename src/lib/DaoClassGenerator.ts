@@ -131,7 +131,7 @@ export class DaoClassGenerator {
 		if (column.notNull) {
 			return `else if (row.${column.name} === null || row.${column.name} === undefined) throw new Error('row.${column.name} cannot be null');`;
 		} else {
-			return `else if (row.${column.name} === null || row.${column.name} === undefined) row.${column.propertyName} = null;`;
+			return `else if (row.${column.name} === null || row.${column.name} === undefined) dest.${column.propertyName} = null;`;
 		}
 	}
 

@@ -114,7 +114,7 @@ export class UserDao {
 		else throw new TypeError('Wrong type for row.adult');
 
 		if (_.isString(row.addr)) dest.addr = row.addr;
-		else if (row.addr === null || row.addr === undefined) row.addr = null;
+		else if (row.addr === null || row.addr === undefined) dest.addr = null;
 		else throw new TypeError('Wrong type for row.addr');
 
 		return dest;

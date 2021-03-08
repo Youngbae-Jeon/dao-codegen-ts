@@ -21,6 +21,7 @@ export interface Generation {
 	files: string[];
 	ts?: {
 		dataTypeOnly?: boolean;
+		propertyNameStyle?: 'camel' | 'snake' | 'identical';
 		dataTypeName?: TargetNameOptions;
 		daoClassName?: TargetNameOptions;
 		output: GenerationOutputOptions;

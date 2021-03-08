@@ -5,7 +5,7 @@ import { Column, Table } from './table';
 import { upperCamelCase } from './utils';
 
 export class ModelAnalyzer {
-	constructor(private model: ModelDefinition, private file: string) {}
+	constructor(private model: ModelDefinition, private file: string, private options?: {propertyNameStyle?: 'camel' | 'snake' | 'identical'}) {}
 
 	private getName() {
 		return this.model.name || upperCamelCase(this.model.table);
@@ -56,7 +56,7 @@ export class ModelAnalyzer {
 		const columns: Column[] = [];
 		_.forOwn(this.model.columns, (columnDefinition, name) => {
 			const primaryKey = solePrimaryKey === name ? 'sole' : primaryKeyColumns.includes(name);
-			const column = new ColumnAnalyzer(columnDefinition, name, primaryKey).analyze();
+			const column = new ColumnAnalyzer(columnDefinition, {name, primaryKey, propertyNameStyle: this.options?.propertyNameStyle}).analyze();
 			columns.push(column);
 		});
 		return columns;
@@ -64,19 +64,33 @@ export class ModelAnalyzer {
 }
 
 class ColumnAnalyzer {
-	constructor(private definition: ColumnDefinition, private name: string, private primaryKey: boolean | 'sole') {}
+	constructor(private definition: ColumnDefinition, private options: {name: string, primaryKey: boolean | 'sole', propertyNameStyle?: 'camel' | 'snake' | 'identical'}) {}
 
 	private getPropertyName(): string {
-		return this.definition.property?.name || _.camelCase(this.name);
+		if (this.definition.property?.name) {
+			return this.definition.property.name;
+
+		} else {
+			const columnName = this.options.name;
+			switch (this.options.propertyNameStyle) {
+				case 'camel':
+					return _.camelCase(columnName);
+				case 'snake':
+					return _.snakeCase(columnName);
+				case 'identical':
+				default:
+					return columnName;
+			}
+		}
 	}
 
 	private resolveType(): { type: string, propertyType: string } {
 		const type = this.definition.type;
 
-		const intType = /\b(INT|TINYINT|SMALLINT|BIGINT)(\([0-9]+\))?(\s+UNSIGNED)?\b/i.exec(type);
+		const intType = /\b(INT|TINYINT|SMALLINT|BIGINT)(\([0-9]+\))?(\s+UNSIGNED\b)?/i.exec(type);
 		if (intType) return { type: intType[0], propertyType: 'number' };
 
-		const numericType = /\bNUMERIC\([0-9]+,[0-9]+\)(\s+UNSIGNED)?\b/i.exec(type);
+		const numericType = /\bNUMERIC\([0-9]+,[0-9]+\)(\s+UNSIGNED\b)?/i.exec(type);
 		if (numericType) return { type: numericType[0], propertyType: 'number' };
 
 		const charType = /\b(CHAR|VARCHAR)\([0-9]+\)/i.exec(type);
@@ -85,7 +99,7 @@ class ColumnAnalyzer {
 		const textType = /\bTEXT\b/i.exec(type);
 		if (textType) return { type: textType[0], propertyType: 'string' };
 
-		const datetimeType = /\bDATETIME(\([0-6]\))?\b/i.exec(type);
+		const datetimeType = /\bDATETIME\b(\([0-6]\))?/i.exec(type);
 		if (datetimeType) return { type: datetimeType[0], propertyType: 'Date' };
 
 		const dateType = /\bDATE\b/i.exec(type);
@@ -94,7 +108,7 @@ class ColumnAnalyzer {
 		const jsonType = /\bJSON\b/i.exec(type);
 		if (jsonType) return { type: jsonType[0], propertyType: 'any' };
 
-		throw new Error(`Cannot parse type for '${this.name}': ${type}`);
+		throw new Error(`Cannot parse type for '${this.options.name}': ${type}`);
 	}
 
 	private isNotNull(): boolean {
@@ -102,14 +116,14 @@ class ColumnAnalyzer {
 	}
 
 	private isAutoIncrement(): boolean {
-		return this.primaryKey === 'sole' && /\bAUTO_INCREMENT\b/i.test(this.definition.type);
+		return this.options.primaryKey === 'sole' && /\bAUTO_INCREMENT\b/i.test(this.definition.type);
 	}
 
 	analyze(): Column {
 		const definition = this.definition;
 		const { type, propertyType } = this.resolveType();
 		const column: Column =  {
-			name: this.name,
+			name: this.options.name,
 			type,
 			propertyName: this.getPropertyName(),
 			propertyType: definition.property?.type || propertyType
@@ -117,8 +131,8 @@ class ColumnAnalyzer {
 		if (definition.title) column.title = definition.title;
 		if (definition.description) column.description = definition.description;
 		if (this.isNotNull()) column.notNull = true;
-		if (this.primaryKey) {
-			column.primaryKey = this.primaryKey;
+		if (this.options.primaryKey) {
+			column.primaryKey = this.options.primaryKey;
 			column.notNull = true;
 		}
 		if (this.isAutoIncrement()) column.autoIncrement = true;

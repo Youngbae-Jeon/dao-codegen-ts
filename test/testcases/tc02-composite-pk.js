@@ -76,9 +76,9 @@ export interface ProductVariantData {
 /** 품목정보 */
 export interface ProductVariant extends ProductVariantData {
 	/** 상품번호 */
-	productNo: number;
+	product_no: number;
 	/** 품목번호 */
-	variantNo: number;
+	variant_no: number;
 }
 
 export class ProductVariantDao {
@@ -86,11 +86,11 @@ export class ProductVariantDao {
 		if (!dest) dest = {};
 
 		if (_.isString(row.color)) dest.color = row.color;
-		else if (row.color === null || row.color === undefined) row.color = null;
+		else if (row.color === null || row.color === undefined) dest.color = null;
 		else throw new TypeError('Wrong type for row.color');
 
 		if (_.isString(row.size)) dest.size = row.size;
-		else if (row.size === null || row.size === undefined) row.size = null;
+		else if (row.size === null || row.size === undefined) dest.size = null;
 		else throw new TypeError('Wrong type for row.size');
 
 		return dest;
@@ -99,11 +99,11 @@ export class ProductVariantDao {
 	static harvest(row: {[name: string]: any}, dest?: any): ProductVariant {
 		if (!dest) dest = {};
 
-		if (_.isNumber(row.product_no)) dest.productNo = row.product_no;
+		if (_.isNumber(row.product_no)) dest.product_no = row.product_no;
 		else if (row.product_no === null || row.product_no === undefined) throw new Error('row.product_no cannot be null');
 		else throw new TypeError('Wrong type for row.product_no');
 
-		if (_.isNumber(row.variant_no)) dest.variantNo = row.variant_no;
+		if (_.isNumber(row.variant_no)) dest.variant_no = row.variant_no;
 		else if (row.variant_no === null || row.variant_no === undefined) throw new Error('row.variant_no cannot be null');
 		else throw new TypeError('Wrong type for row.variant_no');
 
@@ -111,11 +111,11 @@ export class ProductVariantDao {
 		return dest;
 	}
 
-	static async find(productNo: number, variantNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
+	static async find(product_no: number, variant_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
 		let sql = 'SELECT * FROM product_variant WHERE product_no=? AND variant_no=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
 
-		const stmt = mysql.format(sql, [productNo, variantNo]);
+		const stmt = mysql.format(sql, [product_no, variant_no]);
 		console.log('ProductVariantDao:', stmt);
 
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
@@ -145,15 +145,15 @@ export class ProductVariantDao {
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(productNo: number, variantNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
-		const found = await this.find(productNo, variantNo, conn, options);
-		if (!found) throw new Error(\`No such #ProductVariant{productNo: \${productNo}, variantNo: \${variantNo}}\`);
+	static async fetch(product_no: number, variant_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
+		const found = await this.find(product_no, variant_no, conn, options);
+		if (!found) throw new Error(\`No such #ProductVariant{product_no: \${product_no}, variant_no: \${variant_no}}\`);
 		return found;
 	}
 
-	static async create(productNo: number, variantNo: number, data: ProductVariantData, conn: Pick<Connection, 'execute'>, options: { onDuplicate?: 'update' }): Promise<ProductVariant> {
-		if (productNo === null || productNo === undefined) throw new Error('Argument productNo cannot be null or undefined');
-		if (variantNo === null || variantNo === undefined) throw new Error('Argument variantNo cannot be null or undefined');
+	static async create(product_no: number, variant_no: number, data: ProductVariantData, conn: Pick<Connection, 'execute'>, options: { onDuplicate?: 'update' }): Promise<ProductVariant> {
+		if (product_no === null || product_no === undefined) throw new Error('Argument product_no cannot be null or undefined');
+		if (variant_no === null || variant_no === undefined) throw new Error('Argument variant_no cannot be null or undefined');
 
 		const params: {[name: string]: any} = {};
 		if (data.color === null || data.color === undefined) params.color = null;
@@ -164,19 +164,19 @@ export class ProductVariantDao {
 
 		let stmt: string;
 		if (options?.onDuplicate === 'update') {
-			stmt = mysql.format('INSERT INTO product_variant SET product_no, variant_no, ? ON DUPLICATE KEY UPDATE ?', [productNo, variantNo, params, params]);
+			stmt = mysql.format('INSERT INTO product_variant SET product_no, variant_no, ? ON DUPLICATE KEY UPDATE ?', [product_no, variant_no, params, params]);
 		} else {
-			stmt = mysql.format('INSERT INTO product_variant SET product_no, variant_no, ?', [productNo, variantNo, params]);
+			stmt = mysql.format('INSERT INTO product_variant SET product_no, variant_no, ?', [product_no, variant_no, params]);
 		}
 		console.log('ProductVariantDao:', stmt);
 
 		await conn.execute<ResultSetHeader>(stmt);
-		return {...data, productNo, variantNo};
+		return {...data, product_no, variant_no};
 	}
 
 	static async update(origin: ProductVariant, data: Partial<ProductVariantData>, conn: Pick<Connection, 'execute'>): Promise<ProductVariant> {
-		if (origin.productNo === null || origin.productNo === undefined) throw new Error('Argument origin.productNo cannot be null or undefined');
-		if (origin.variantNo === null || origin.variantNo === undefined) throw new Error('Argument origin.variantNo cannot be null or undefined');
+		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
+		if (origin.variant_no === null || origin.variant_no === undefined) throw new Error('Argument origin.variant_no cannot be null or undefined');
 
 		const params: {[name: string]: any} = {};
 		const updates: Partial<ProductVariantData> = {};
@@ -191,7 +191,7 @@ export class ProductVariantDao {
 
 		const stmt = mysql.format(
 			\`UPDATE product_variant SET ? WHERE product_no=?, variant_no=?\`,
-			[params, origin.productNo, origin.variantNo]
+			[params, origin.product_no, origin.variant_no]
 		);
 		console.log('ProductVariantDao:', stmt);
 
@@ -202,12 +202,12 @@ export class ProductVariantDao {
 	}
 
 	static async delete(origin: ProductVariant, conn: Pick<Connection, 'execute'>): Promise<void> {
-		if (origin.productNo === null || origin.productNo === undefined) throw new Error('Argument origin.productNo cannot be null or undefined');
-		if (origin.variantNo === null || origin.variantNo === undefined) throw new Error('Argument origin.variantNo cannot be null or undefined');
+		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
+		if (origin.variant_no === null || origin.variant_no === undefined) throw new Error('Argument origin.variant_no cannot be null or undefined');
 
 		const stmt = mysql.format(
 			\`DELETE FROM product_variant WHERE product_no=?, variant_no=?\`,
-			[origin.productNo, origin.variantNo]
+			[origin.product_no, origin.variant_no]
 		);
 		console.log('ProductVariantDao:', stmt);
 
