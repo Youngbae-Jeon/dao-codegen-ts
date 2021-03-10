@@ -12,11 +12,12 @@
 					"type": "object",
 					"properties": {
 						"name": { "type": "string" },
-						"type": { "type": "string" }
+						"type": { "type": "string" },
+						"converter": { "type": "string" }
 					}
 				}
 			},
-			"required": ["type"]
+			"required": []
 		},
 		"IndexDefinition": {
 			"type": "object",

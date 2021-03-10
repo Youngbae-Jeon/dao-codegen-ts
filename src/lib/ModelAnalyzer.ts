@@ -126,10 +126,11 @@ class ColumnAnalyzer {
 			name: this.options.name,
 			type,
 			propertyName: this.getPropertyName(),
-			propertyType: definition.property?.type || propertyType
+			propertyType: definition.property?.type || propertyType,
 		};
 		if (definition.title) column.title = definition.title;
 		if (definition.description) column.description = definition.description;
+		if (definition.property?.converter)	column.propertyConverter = definition.property.converter; 
 		if (this.isNotNull()) column.notNull = true;
 		if (this.options.primaryKey) {
 			column.primaryKey = this.options.primaryKey;

@@ -53,6 +53,13 @@ export class DaoClassGenerator {
 	
 				mc.import(type, module);
 			});
+
+			if (column.propertyConverter) {
+				const module = this.findModuleFor(column.propertyConverter);
+				if (!module) throw new Error(`Cannot resolve property type converter '${column.propertyConverter}'`);
+
+				mc.import(column.propertyConverter, module);
+			}
 		});
 
 		mc.importDefault('_', 'lodash');
@@ -103,40 +110,46 @@ export class DaoClassGenerator {
 	}
 
 	private generateHarvestColumn(column: Column, coder: JsCoder) {
-		switch (column.propertyType) {
-		case 'boolean':
-			coder.add(`if (_.isBoolean(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
-			coder.add(`else if (_.isNumber(row.${column.name})) dest.${column.propertyName} = !!row.${column.name};`);
-			break;
-		case 'number':
-			coder.add(`if (_.isNumber(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
-			break;
-		case 'string':
-			coder.add(`if (_.isString(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
-			break;
-		case 'Date':
-			coder.add(`if (_.isDate(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
-			coder.add(`else if (_.isString(row.${column.name})) dest.${column.propertyName} = new Date(row.${column.name});`);
-			break;
-		default:
-			coder.add(`if (_.isString(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
-		}
+		if (column.propertyConverter) {
+			coder.add(this.handleNullLikeValues(column));
+			coder.add(`else dest.${column.propertyName} = ${column.propertyConverter}.toPropertyValue(row.${column.name});`);
 
-		coder.add(this.handleNullLikeValues(column));
-		coder.add(this.throwUnhandledValues(column));
+		} else {
+			switch (column.propertyType) {
+			case 'boolean':
+				coder.add(`if (_.isBoolean(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+				coder.add(`else if (_.isNumber(row.${column.name})) dest.${column.propertyName} = !!row.${column.name};`);
+				break;
+			case 'number':
+				coder.add(`if (_.isNumber(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+				break;
+			case 'string':
+				coder.add(`if (_.isString(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+				break;
+			case 'Date':
+				coder.add(`if (_.isDate(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+				coder.add(`else if (_.isString(row.${column.name})) dest.${column.propertyName} = new Date(row.${column.name});`);
+				break;
+			default:
+				coder.add(`if (_.isString(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+			}
+	
+			coder.add(`else ${this.handleNullLikeValues(column)}`);
+			coder.add(`else ${this.throwUnhandledValues(column)}`);
+		}
 		coder.add('');
 	}
 
 	private handleNullLikeValues(column: Column): string {
 		if (column.notNull) {
-			return `else if (row.${column.name} === null || row.${column.name} === undefined) throw new Error('row.${column.name} cannot be null');`;
+			return `if (row.${column.name} === null || row.${column.name} === undefined) throw new Error('row.${column.name} cannot be null');`;
 		} else {
-			return `else if (row.${column.name} === null || row.${column.name} === undefined) dest.${column.propertyName} = null;`;
+			return `if (row.${column.name} === null || row.${column.name} === undefined) dest.${column.propertyName} = null;`;
 		}
 	}
 
 	private throwUnhandledValues(column: Column): string {
-		return `else throw new TypeError('Wrong type for row.${column.name}');`;
+		return `throw new TypeError('Wrong type for row.${column.name}');`;
 	}
 
 	private generateStaticFind(coder: JsCoder) {
@@ -216,10 +229,14 @@ export class DaoClassGenerator {
 			} else {
 				coder.add(`if (data.${column.propertyName} === null || data.${column.propertyName} === undefined) params.${column.name} = null;`);
 			}
-			if (column.type === 'JSON') {
-				coder.add(`else params.${column.name} = JSON.stringify(data.${column.propertyName});`);
+			if (column.propertyConverter) {
+				coder.add(`else params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`)
 			} else {
-				coder.add(`else params.${column.name} = data.${column.propertyName};`);
+				if (column.type === 'JSON') {
+					coder.add(`else params.${column.name} = JSON.stringify(data.${column.propertyName});`);
+				} else {
+					coder.add(`else params.${column.name} = data.${column.propertyName};`);
+				}
 			}
 			coder.add('');
 		});
@@ -269,13 +286,15 @@ export class DaoClassGenerator {
 			coder.add(`if (data.${column.propertyName} !== undefined) {`);
 			if (column.notNull) {
 				coder.add(`if (data.${column.propertyName} === null) throw new Error('data.${column.propertyName} cannot be null or undefined');`);
+			}
+			if (column.propertyConverter) {
+				coder.add(`params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`);
+			} else {
 				if (column.type === 'JSON') {
 					coder.add(`params.${column.name} = JSON.stringify(data.${column.propertyName});`);
 				} else {
 					coder.add(`params.${column.name} = data.${column.propertyName};`);
 				}
-			} else {
-				coder.add(`params.${column.name} = data.${column.propertyName};`);
 			}
 			coder.add(`updates.${column.propertyName} = data.${column.propertyName};`);
 			coder.add('}');

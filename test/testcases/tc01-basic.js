@@ -25,7 +25,10 @@ describe('기본 모델 테스트', () => {
 					title: '성별',
 					description: '- M: 남성\n- F: 여성',
 					type: 'char(1) not null',
-					property: { type: 'Gender' }
+					property: {
+						type: 'Gender',
+						converter: 'GenderType'
+					}
 				},
 				adult: {
 					type: 'tinyint not null',
@@ -40,7 +43,7 @@ describe('기본 모델 테스트', () => {
 				{ with: ['name'] }
 			],
 			imports: {
-				'../src/lib/types': ['Gender']
+				'../src/lib/types': ['Gender', 'GenderType']
 			}
 		};
 		prj.dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dcg-'))
@@ -74,7 +77,7 @@ import _ from 'lodash';
 import assert from 'assert';
 import mysql, { Connection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import { Gender } from '../../src/lib/types';
+import { Gender, GenderType } from '../../src/lib/types';
 
 export interface UserData {
 	/** 이름 */
@@ -104,9 +107,8 @@ export class UserDao {
 		else if (row.name === null || row.name === undefined) throw new Error('row.name cannot be null');
 		else throw new TypeError('Wrong type for row.name');
 
-		if (_.isString(row.gender)) dest.gender = row.gender;
-		else if (row.gender === null || row.gender === undefined) throw new Error('row.gender cannot be null');
-		else throw new TypeError('Wrong type for row.gender');
+		if (row.gender === null || row.gender === undefined) throw new Error('row.gender cannot be null');
+		else dest.gender = GenderType.toPropertyValue(row.gender);
 
 		if (_.isBoolean(row.adult)) dest.adult = row.adult;
 		else if (_.isNumber(row.adult)) dest.adult = !!row.adult;
@@ -177,7 +179,7 @@ export class UserDao {
 		else params.name = data.name;
 
 		if (data.gender === null || data.gender === undefined) throw new Error('data.gender cannot be null or undefined');
-		else params.gender = data.gender;
+		else params.gender = GenderType.toSqlValue(data.gender);
 
 		if (data.adult === null || data.adult === undefined) throw new Error('data.adult cannot be null or undefined');
 		else params.adult = data.adult;
@@ -205,7 +207,7 @@ export class UserDao {
 		}
 		if (data.gender !== undefined) {
 			if (data.gender === null) throw new Error('data.gender cannot be null or undefined');
-			params.gender = data.gender;
+			params.gender = GenderType.toSqlValue(data.gender);
 			updates.gender = data.gender;
 		}
 		if (data.adult !== undefined) {

@@ -41,8 +41,13 @@ export interface ColumnDefinition {
 		name?: string;
 		/** 속성타입 */
 		type?: string;
-		/** 속성타입을 가지고 있는(import 해야 할) 모듈 path */
-		from?: string;
+		/**
+		 * 속성타입 변환기 이름, imports에 모듈을 추가해주어야 함
+		 * converter는 다음 두개의 메서드를 가지고 있어야 함
+		 * - toPropertyValue: (sqlValue: any) => any;
+		 * - toSqlValue: (propertyValue: any) => any;
+		 */
+		converter?: string;
 	}
 }
 
