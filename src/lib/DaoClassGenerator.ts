@@ -183,7 +183,18 @@ export class DaoClassGenerator {
 					wheres.push(\`\${key} IS NULL\`);
 				} else {
 					wheres.push(\`\${key}=?\`);
-					params.push(val);
+		`);
+		const columnsWithConverter = this.table.columns.filter(column => !!column.propertyConverter);
+		if (columnsWithConverter.length) {
+			columnsWithConverter.forEach((column, i) => {
+				coder.add(`${i ? 'else ' : ''}if (key === '${column.propertyName}') params.push(${column.propertyConverter}.toSqlValue(val));`);
+			});
+			coder.add('else params.push(val);');
+
+		} else {
+			coder.add('params.push(val);');
+		}
+		coder.add(`
 				}
 			}
 

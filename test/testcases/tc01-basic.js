@@ -156,7 +156,8 @@ export class UserDao {
 				wheres.push(\`\${key} IS NULL\`);
 			} else {
 				wheres.push(\`\${key}=?\`);
-				params.push(val);
+				if (key === 'gender') params.push(GenderType.toSqlValue(val));
+				else params.push(val);
 			}
 		}
 
