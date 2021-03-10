@@ -1,11 +1,11 @@
 {
 	"name": "@youngbae-jeon/dao-codegen-ts",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Data Access Object code generator for Typescript",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"bin": {
-		"dao-gencode-ts": "./bin/dao-codegen-ts"
+		"dao-gencode-ts": "bin/dao-codegen-ts"
 	},
 	"scripts": {
 		"build": "tsc --build tsconfig.json",
