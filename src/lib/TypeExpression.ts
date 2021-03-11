@@ -307,7 +307,7 @@ export class TypeExpression {
 
 		const tokens = new Tokenizer(expr).tokenize();
 		const parsed = new Parser(tokens).parse();
-		console.log('parsed:', util.inspect(parsed, false, null, true));
+		// console.log('parsed:', util.inspect(parsed, false, null, true));
 
 		if (onUnknownType) {
 			this.findInExpression(parsed, onUnknownType);
@@ -318,7 +318,7 @@ export class TypeExpression {
 	static findInExpression(expressions: Expression[], onType: (type: string) => void) {
 		expressions.forEach(expr => {
 			if (expr.expr === 'unknown') {
-				console.log('unknown type:', expr.tokens![0])
+				// console.log('unknown type:', expr.tokens![0])
 				onType(expr.tokens![0] as string);
 
 			} else if (expr.expr === 'chained_list') {

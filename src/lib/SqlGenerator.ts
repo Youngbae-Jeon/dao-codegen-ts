@@ -40,7 +40,12 @@ export class SqlGenerator {
 
 	private generateColumnPhrases(): Phrase[] {
 		return this.table.columns.map((column, i) => {
-			let expr = `${column.name} ${column.type.toUpperCase()}`;
+			let expr;
+			if (/^enum\b.*/.test(column.type)) {
+				expr = `${column.name} ${column.type.replace(/^enum\b/, 'ENUM')}`;
+			} else {
+				expr = `${column.name} ${column.type.toUpperCase()}`;
+			}
 			if (column.notNull || column.primaryKey) expr += ' NOT NULL';
 			if (column.autoIncrement) expr += ' AUTO_INCREMENT';
 			if (column.primaryKey === 'sole') expr += ' PRIMARY KEY';

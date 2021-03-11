@@ -37,6 +37,14 @@ describe('기본 모델 테스트', () => {
 				addr: {
 					title: '주소',
 					type: 'text'
+				},
+				status: {
+					title: '상태',
+					type: 'enum(\'normal\', \'blocked\', \'expired\') not null'
+				},
+				type: {
+					title: '구분',
+					type: 'enum(\'user\')'
 				}
 			},
 			indexes: [
@@ -91,6 +99,10 @@ export interface UserData {
 	adult: boolean;
 	/** 주소 */
 	addr?: string | null;
+	/** 상태 */
+	status: 'normal' | 'blocked' | 'expired';
+	/** 구분 */
+	type?: 'user' | null;
 }
 
 /** 사용자 */
@@ -118,6 +130,14 @@ export class UserDao {
 		if (_.isString(row.addr)) dest.addr = row.addr;
 		else if (row.addr === null || row.addr === undefined) dest.addr = null;
 		else throw new TypeError('Wrong type for row.addr');
+
+		if (_.isString(row.status)) dest.status = row.status;
+		else if (row.status === null || row.status === undefined) throw new Error('row.status cannot be null');
+		else throw new TypeError('Wrong type for row.status');
+
+		if (_.isString(row.type)) dest.type = row.type;
+		else if (row.type === null || row.type === undefined) dest.type = null;
+		else throw new TypeError('Wrong type for row.type');
 
 		return dest;
 	}
@@ -188,6 +208,12 @@ export class UserDao {
 		if (data.addr === null || data.addr === undefined) params.addr = null;
 		else params.addr = data.addr;
 
+		if (data.status === null || data.status === undefined) throw new Error('data.status cannot be null or undefined');
+		else params.status = data.status;
+
+		if (data.type === null || data.type === undefined) params.type = null;
+		else params.type = data.type;
+
 		const stmt = mysql.format('INSERT INTO user SET ?', [params]);
 		console.log('UserDao:', stmt);
 
@@ -219,6 +245,15 @@ export class UserDao {
 		if (data.addr !== undefined) {
 			params.addr = data.addr;
 			updates.addr = data.addr;
+		}
+		if (data.status !== undefined) {
+			if (data.status === null) throw new Error('data.status cannot be null or undefined');
+			params.status = data.status;
+			updates.status = data.status;
+		}
+		if (data.type !== undefined) {
+			params.type = data.type;
+			updates.type = data.type;
 		}
 
 		const stmt = mysql.format(
@@ -273,6 +308,8 @@ CREATE TABLE user (
 	gender CHAR(1) NOT NULL, -- 성별
 	adult TINYINT NOT NULL,
 	addr TEXT, -- 주소
+	status ENUM('normal', 'blocked', 'expired') NOT NULL, -- 상태
+	type ENUM('user'), -- 구분
 	INDEX (name)
 );
 `.trimLeft()

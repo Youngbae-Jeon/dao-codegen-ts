@@ -108,6 +108,9 @@ class ColumnAnalyzer {
 		const jsonType = /\bJSON\b/i.exec(type);
 		if (jsonType) return { type: jsonType[0], propertyType: 'any' };
 
+		const enumType = /\bENUM\b\(('[^']*'(\s*,\s*'[^']*')*)\)*/i.exec(type);
+		if (enumType) return { type: enumType[0], propertyType: enumType[1].split(/\s*,\s*/).join(' | ') };
+
 		throw new Error(`Cannot parse type for '${this.options.name}': ${type}`);
 	}
 
