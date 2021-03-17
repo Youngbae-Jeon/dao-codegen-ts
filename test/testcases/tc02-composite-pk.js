@@ -138,7 +138,8 @@ export class ProductVariantDao {
 			}
 		}
 
-		const stmt = mysql.format(\`SELECT * FROM product_variant WHERE \${wheres.join(' AND ')}\`, params);
+		let stmt = mysql.format(\`SELECT * FROM product_variant\`, params);
+		if (wheres.length) stmt += \` WHERE \${wheres.join(' AND ')}\`;
 		console.log('ProductVariantDao:', stmt);
 
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
@@ -190,7 +191,7 @@ export class ProductVariantDao {
 		}
 
 		const stmt = mysql.format(
-			\`UPDATE product_variant SET ? WHERE product_no=?, variant_no=?\`,
+			\`UPDATE product_variant SET ? WHERE product_no=? AND variant_no=?\`,
 			[params, origin.product_no, origin.variant_no]
 		);
 		console.log('ProductVariantDao:', stmt);
@@ -206,7 +207,7 @@ export class ProductVariantDao {
 		if (origin.variant_no === null || origin.variant_no === undefined) throw new Error('Argument origin.variant_no cannot be null or undefined');
 
 		const stmt = mysql.format(
-			\`DELETE FROM product_variant WHERE product_no=?, variant_no=?\`,
+			\`DELETE FROM product_variant WHERE product_no=? AND variant_no=?\`,
 			[origin.product_no, origin.variant_no]
 		);
 		console.log('ProductVariantDao:', stmt);

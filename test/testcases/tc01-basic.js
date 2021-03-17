@@ -181,7 +181,8 @@ export class UserDao {
 			}
 		}
 
-		const stmt = mysql.format(\`SELECT * FROM user WHERE \${wheres.join(' AND ')}\`, params);
+		let stmt = mysql.format(\`SELECT * FROM user\`, params);
+		if (wheres.length) stmt += \` WHERE \${wheres.join(' AND ')}\`;
 		console.log('UserDao:', stmt);
 
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);

@@ -198,7 +198,8 @@ export class DaoClassGenerator {
 				}
 			}
 
-			const stmt = mysql.format(\`SELECT * FROM ${this.table.name} WHERE \${wheres.join(' AND ')}\`, params);
+			let stmt = mysql.format(\`SELECT * FROM ${this.table.name}\`, params);
+			if (wheres.length) stmt += \` WHERE \${wheres.join(' AND ')}\`;
 			console.log('${this.name}:', stmt);
 
 			const [rows] = await conn.execute<RowDataPacket[]>(stmt);
@@ -314,7 +315,7 @@ export class DaoClassGenerator {
 
 		coder.add(`
 			const stmt = mysql.format(
-				\`UPDATE ${table.name} SET ? WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + '=?').join(', ')}\`,
+				\`UPDATE ${table.name} SET ? WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + '=?').join(' AND ')}\`,
 				[params, ${primaryKeyColumns.map(pkcolumn => 'origin.' + pkcolumn.propertyName).join(', ')}]
 			);
 			console.log('${this.name}:', stmt);
@@ -338,7 +339,7 @@ export class DaoClassGenerator {
 
 		coder.add(`
 			const stmt = mysql.format(
-				\`DELETE FROM ${table.name} WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + '=?').join(', ')}\`,
+				\`DELETE FROM ${table.name} WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + '=?').join(' AND ')}\`,
 				[${primaryKeyColumns.map(pkcolumn => 'origin.' + pkcolumn.propertyName).join(', ')}]
 			);
 			console.log('${this.name}:', stmt);
