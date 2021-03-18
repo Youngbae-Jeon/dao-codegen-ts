@@ -5,7 +5,7 @@
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"bin": {
-		"dao-gencode-ts": "bin/dao-codegen-ts"
+		"dao-codegen-ts": "bin/dao-codegen-ts"
 	},
 	"scripts": {
 		"build": "tsc --build tsconfig.json",
