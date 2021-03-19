@@ -133,6 +133,11 @@ export class DaoClassGenerator {
 			default:
 				if (column.checkingType === 'number') {
 					coder.add(`if (_.isNumber(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+				} else if (column.checkingType === 'any') {
+					coder.add(this.handleNullLikeValues(column));
+					coder.add(`else dest.${column.propertyName} = row.${column.name};`);
+					coder.add('');
+					return;
 				} else {
 					coder.add(`if (_.isString(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
 				}

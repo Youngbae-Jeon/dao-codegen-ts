@@ -57,7 +57,6 @@ describe('복잡한 타입 테스트', () => {
 				prj.modelDir + '/**/*.yaml'
 			],
 			ts: {
-				dataTypeOnly: true,
 				output: {
 					dir: path.join(prj.dir, 'gen/dao')
 				}
@@ -72,6 +71,10 @@ describe('복잡한 타입 테스트', () => {
 // This file is generated from model file '../../model/product.yaml'
 // by dao-codegen-ts
 // --------------------
+import _ from 'lodash';
+import assert from 'assert';
+import mysql, { Connection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+
 import { Shipment, Supply } from '../../src/lib/types';
 
 export interface ProductData {
@@ -87,6 +90,143 @@ export interface ProductData {
 export interface Product extends ProductData {
 	/** 상품번호 */
 	product_no: number;
+}
+
+export class ProductDao {
+	static harvestData(row: {[name: string]: any}, dest?: any): ProductData {
+		if (!dest) dest = {};
+
+		if (row.shipment === null || row.shipment === undefined) dest.shipment = null;
+		else dest.shipment = row.shipment;
+
+		if (row.spec === null || row.spec === undefined) dest.spec = null;
+		else dest.spec = row.spec;
+
+		if (row.supply === null || row.supply === undefined) dest.supply = null;
+		else dest.supply = row.supply;
+
+		return dest;
+	}
+
+	static harvest(row: {[name: string]: any}, dest?: any): Product {
+		if (!dest) dest = {};
+
+		if (_.isNumber(row.product_no)) dest.product_no = row.product_no;
+		else if (row.product_no === null || row.product_no === undefined) throw new Error('row.product_no cannot be null');
+		else throw new TypeError('Wrong type for row.product_no');
+
+		this.harvestData(row, dest);
+		return dest;
+	}
+
+	static async find(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<Product | undefined> {
+		let sql = 'SELECT * FROM product WHERE product_no=?';
+		if (options?.for === 'update') sql += ' FOR UPDATE';
+
+		const stmt = mysql.format(sql, [product_no]);
+		console.log('ProductDao:', stmt);
+
+		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
+		if (rows.length) {
+			return this.harvest(rows[0]);
+		}
+	}
+
+	static async filter(by: Partial<Product>, conn: Pick<Connection, 'execute'>): Promise<Product[]> {
+		const wheres: string[] = [];
+		const params: any[] = [];
+		const keys = Object.keys(by);
+		for (const key of keys) {
+			const val = (by as any)[key];
+			if (val === undefined || val === null) {
+				wheres.push(\`\${key} IS NULL\`);
+			} else {
+				wheres.push(\`\${key}=?\`);
+				params.push(val);
+			}
+		}
+
+		let stmt = mysql.format(\`SELECT * FROM product\`, params);
+		if (wheres.length) stmt += \` WHERE \${wheres.join(' AND ')}\`;
+		console.log('ProductDao:', stmt);
+
+		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
+		return rows.map(row => this.harvest(row));
+	}
+
+	static async fetch(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<Product | undefined> {
+		const found = await this.find(product_no, conn, options);
+		if (!found) throw new Error(\`No such #Product{product_no: \${product_no}}\`);
+		return found;
+	}
+
+	static async create(product_no: number, data: ProductData, conn: Pick<Connection, 'execute'>, options: { onDuplicate?: 'update' }): Promise<Product> {
+		if (product_no === null || product_no === undefined) throw new Error('Argument product_no cannot be null or undefined');
+
+		const params: {[name: string]: any} = {};
+		if (data.shipment === null || data.shipment === undefined) params.shipment = null;
+		else params.shipment = JSON.stringify(data.shipment);
+
+		if (data.spec === null || data.spec === undefined) params.spec = null;
+		else params.spec = JSON.stringify(data.spec);
+
+		if (data.supply === null || data.supply === undefined) params.supply = null;
+		else params.supply = JSON.stringify(data.supply);
+
+		let stmt: string;
+		if (options?.onDuplicate === 'update') {
+			stmt = mysql.format('INSERT INTO product SET product_no, ? ON DUPLICATE KEY UPDATE ?', [product_no, params, params]);
+		} else {
+			stmt = mysql.format('INSERT INTO product SET product_no, ?', [product_no, params]);
+		}
+		console.log('ProductDao:', stmt);
+
+		await conn.execute<ResultSetHeader>(stmt);
+		return {...data, product_no};
+	}
+
+	static async update(origin: Product, data: Partial<ProductData>, conn: Pick<Connection, 'execute'>): Promise<Product> {
+		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
+
+		const params: {[name: string]: any} = {};
+		const updates: Partial<ProductData> = {};
+		if (data.shipment !== undefined) {
+			params.shipment = JSON.stringify(data.shipment);
+			updates.shipment = data.shipment;
+		}
+		if (data.spec !== undefined) {
+			params.spec = JSON.stringify(data.spec);
+			updates.spec = data.spec;
+		}
+		if (data.supply !== undefined) {
+			params.supply = JSON.stringify(data.supply);
+			updates.supply = data.supply;
+		}
+
+		const stmt = mysql.format(
+			\`UPDATE product SET ? WHERE product_no=?\`,
+			[params, origin.product_no]
+		);
+		console.log('ProductDao:', stmt);
+
+		const [result] = await conn.execute<ResultSetHeader>(stmt);
+		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
+
+		return Object.assign(origin, updates);
+	}
+
+	static async delete(origin: Product, conn: Pick<Connection, 'execute'>): Promise<void> {
+		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
+
+		const stmt = mysql.format(
+			\`DELETE FROM product WHERE product_no=?\`,
+			[origin.product_no]
+		);
+		console.log('ProductDao:', stmt);
+
+		const [result] = await conn.execute<ResultSetHeader>(stmt);
+		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
+	}
 }
 `.trimLeft()
 		);
