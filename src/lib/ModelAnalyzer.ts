@@ -130,6 +130,7 @@ class ColumnAnalyzer {
 			type,
 			propertyName: this.getPropertyName(),
 			propertyType: definition.property?.type || propertyType,
+			checkingType: propertyType
 		};
 		if (definition.title) column.title = definition.title;
 		if (definition.description) column.description = definition.description;

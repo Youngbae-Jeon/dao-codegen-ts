@@ -131,7 +131,11 @@ export class DaoClassGenerator {
 				coder.add(`else if (_.isString(row.${column.name})) dest.${column.propertyName} = new Date(row.${column.name});`);
 				break;
 			default:
-				coder.add(`if (_.isString(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+				if (column.checkingType === 'number') {
+					coder.add(`if (_.isNumber(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+				} else {
+					coder.add(`if (_.isString(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+				}
 			}
 	
 			coder.add(`else ${this.handleNullLikeValues(column)}`);

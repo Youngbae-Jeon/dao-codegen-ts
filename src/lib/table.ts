@@ -22,5 +22,6 @@ export interface Column {
 	autoIncrement?: boolean;
 	propertyName: string;
 	propertyType: string;
+	checkingType: string;
 	propertyConverter?: string;
 }

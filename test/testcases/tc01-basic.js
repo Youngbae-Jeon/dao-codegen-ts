@@ -45,13 +45,20 @@ describe('기본 모델 테스트', () => {
 				type: {
 					title: '구분',
 					type: 'enum(\'user\')'
-				}
+				},
+				nat_code: {
+					title: '국가 코드',
+					type: 'tinyint unsigned',
+					property: {
+						type: 'NatCode'
+					},
+				},
 			},
 			indexes: [
 				{ with: ['name'] }
 			],
 			imports: {
-				'../src/lib/types': ['Gender', 'GenderType']
+				'../src/lib/types': ['Gender', 'GenderType', 'NatCode']
 			}
 		};
 		prj.dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dcg-'))
@@ -85,7 +92,7 @@ import _ from 'lodash';
 import assert from 'assert';
 import mysql, { Connection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import { Gender, GenderType } from '../../src/lib/types';
+import { Gender, GenderType, NatCode } from '../../src/lib/types';
 
 export interface UserData {
 	/** 이름 */
@@ -103,6 +110,8 @@ export interface UserData {
 	status: 'normal' | 'blocked' | 'expired';
 	/** 구분 */
 	type?: 'user' | null;
+	/** 국가 코드 */
+	nat_code?: NatCode | null;
 }
 
 /** 사용자 */
@@ -138,6 +147,10 @@ export class UserDao {
 		if (_.isString(row.type)) dest.type = row.type;
 		else if (row.type === null || row.type === undefined) dest.type = null;
 		else throw new TypeError('Wrong type for row.type');
+
+		if (_.isNumber(row.nat_code)) dest.nat_code = row.nat_code;
+		else if (row.nat_code === null || row.nat_code === undefined) dest.nat_code = null;
+		else throw new TypeError('Wrong type for row.nat_code');
 
 		return dest;
 	}
@@ -215,6 +228,9 @@ export class UserDao {
 		if (data.type === null || data.type === undefined) params.type = null;
 		else params.type = data.type;
 
+		if (data.nat_code === null || data.nat_code === undefined) params.nat_code = null;
+		else params.nat_code = data.nat_code;
+
 		const stmt = mysql.format('INSERT INTO user SET ?', [params]);
 		console.log('UserDao:', stmt);
 
@@ -255,6 +271,10 @@ export class UserDao {
 		if (data.type !== undefined) {
 			params.type = data.type;
 			updates.type = data.type;
+		}
+		if (data.nat_code !== undefined) {
+			params.nat_code = data.nat_code;
+			updates.nat_code = data.nat_code;
 		}
 
 		const stmt = mysql.format(
@@ -311,6 +331,7 @@ CREATE TABLE user (
 	addr TEXT, -- 주소
 	status ENUM('normal', 'blocked', 'expired') NOT NULL, -- 상태
 	type ENUM('user'), -- 구분
+	nat_code TINYINT UNSIGNED, -- 국가 코드
 	INDEX (name)
 );
 `.trimLeft()
