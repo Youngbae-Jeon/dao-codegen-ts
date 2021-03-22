@@ -165,9 +165,9 @@ export class ProductVariantDao {
 
 		let stmt: string;
 		if (options?.onDuplicate === 'update') {
-			stmt = mysql.format('INSERT INTO product_variant SET product_no, variant_no, ? ON DUPLICATE KEY UPDATE ?', [product_no, variant_no, params, params]);
+			stmt = mysql.format('INSERT INTO product_variant SET product_no=?, variant_no=?, ? ON DUPLICATE KEY UPDATE ?', [product_no, variant_no, params, params]);
 		} else {
-			stmt = mysql.format('INSERT INTO product_variant SET product_no, variant_no, ?', [product_no, variant_no, params]);
+			stmt = mysql.format('INSERT INTO product_variant SET product_no=?, variant_no=?, ?', [product_no, variant_no, params]);
 		}
 		console.log('ProductVariantDao:', stmt);
 

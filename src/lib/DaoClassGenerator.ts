@@ -275,9 +275,9 @@ export class DaoClassGenerator {
 			coder.add(`
 			let stmt: string;
 			if (options?.onDuplicate === 'update') {
-				stmt = mysql.format('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ? ON DUPLICATE KEY UPDATE ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params, params]);
+				stmt = mysql.format('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + "=?").join(', ')}, ? ON DUPLICATE KEY UPDATE ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params, params]);
 			} else {
-				stmt = mysql.format('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name).join(', ')}, ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params]);
+				stmt = mysql.format('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + "=?").join(', ')}, ?', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}, params]);
 			}
 			console.log('${this.name}:', stmt);
 

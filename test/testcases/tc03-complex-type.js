@@ -175,9 +175,9 @@ export class ProductDao {
 
 		let stmt: string;
 		if (options?.onDuplicate === 'update') {
-			stmt = mysql.format('INSERT INTO product SET product_no, ? ON DUPLICATE KEY UPDATE ?', [product_no, params, params]);
+			stmt = mysql.format('INSERT INTO product SET product_no=?, ? ON DUPLICATE KEY UPDATE ?', [product_no, params, params]);
 		} else {
-			stmt = mysql.format('INSERT INTO product SET product_no, ?', [product_no, params]);
+			stmt = mysql.format('INSERT INTO product SET product_no=?, ?', [product_no, params]);
 		}
 		console.log('ProductDao:', stmt);
 
