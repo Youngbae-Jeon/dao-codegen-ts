@@ -154,13 +154,13 @@ export class ProductDao {
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<Product | undefined> {
+	static async fetch(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<Product> {
 		const found = await this.find(product_no, conn, options);
 		if (!found) throw new Error(\`No such #Product{product_no: \${product_no}}\`);
 		return found;
 	}
 
-	static async create(product_no: number, data: ProductData, conn: Pick<Connection, 'execute'>, options: { onDuplicate?: 'update' }): Promise<Product> {
+	static async create(product_no: number, data: ProductData, conn: Pick<Connection, 'execute'>, options?: { onDuplicate?: 'update' }): Promise<Product> {
 		if (product_no === null || product_no === undefined) throw new Error('Argument product_no cannot be null or undefined');
 
 		const params: {[name: string]: any} = {};

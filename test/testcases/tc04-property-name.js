@@ -136,7 +136,7 @@ export class ProductSalesInfoDao {
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(productNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductSalesInfo | undefined> {
+	static async fetch(productNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductSalesInfo> {
 		const found = await this.find(productNo, conn, options);
 		if (!found) throw new Error(\`No such #ProductSalesInfo{productNo: \${productNo}}\`);
 		return found;
@@ -300,7 +300,7 @@ export class ProductSalesInfoDao {
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductSalesInfo | undefined> {
+	static async fetch(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductSalesInfo> {
 		const found = await this.find(product_no, conn, options);
 		if (!found) throw new Error(\`No such #ProductSalesInfo{product_no: \${product_no}}\`);
 		return found;

@@ -146,13 +146,13 @@ export class ProductVariantDao {
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(product_no: number, variant_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
+	static async fetch(product_no: number, variant_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductVariant> {
 		const found = await this.find(product_no, variant_no, conn, options);
 		if (!found) throw new Error(\`No such #ProductVariant{product_no: \${product_no}, variant_no: \${variant_no}}\`);
 		return found;
 	}
 
-	static async create(product_no: number, variant_no: number, data: ProductVariantData, conn: Pick<Connection, 'execute'>, options: { onDuplicate?: 'update' }): Promise<ProductVariant> {
+	static async create(product_no: number, variant_no: number, data: ProductVariantData, conn: Pick<Connection, 'execute'>, options?: { onDuplicate?: 'update' }): Promise<ProductVariant> {
 		if (product_no === null || product_no === undefined) throw new Error('Argument product_no cannot be null or undefined');
 		if (variant_no === null || variant_no === undefined) throw new Error('Argument variant_no cannot be null or undefined');
 

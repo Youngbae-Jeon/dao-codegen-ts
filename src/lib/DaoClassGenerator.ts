@@ -221,7 +221,7 @@ export class DaoClassGenerator {
 		const primaryKeyColumns = table.primaryKeyColumns;
 		const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
 		coder.add(`
-		static async fetch(${pkargs}, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<${this.dataTypeName} | undefined> {
+		static async fetch(${pkargs}, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<${this.dataTypeName}> {
 			const found = await this.find(${primaryKeyColumns.map(p => p.propertyName).join(', ')}, conn, options);
 			if (!found) throw new Error(\`No such #${this.dataTypeName}{${primaryKeyColumns.map(p => p.propertyName + ': ${' + p.propertyName + '}').join(', ')}}\`);
 			return found;
@@ -236,7 +236,7 @@ export class DaoClassGenerator {
 			coder.add(`static async create(data: ${this.dataTypeName}Data, conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}> {`);
 		} else {
 			const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
-			coder.add(`static async create(${pkargs}, data: ${this.dataTypeName}Data, conn: Pick<Connection, 'execute'>, options: { onDuplicate?: 'update' }): Promise<${this.dataTypeName}> {`);
+			coder.add(`static async create(${pkargs}, data: ${this.dataTypeName}Data, conn: Pick<Connection, 'execute'>, options?: { onDuplicate?: 'update' }): Promise<${this.dataTypeName}> {`);
 			primaryKeyColumns.forEach(pkcolumn => {
 				coder.add(`if (${pkcolumn.propertyName} === null || ${pkcolumn.propertyName} === undefined) throw new Error('Argument ${pkcolumn.propertyName} cannot be null or undefined');`);
 			});

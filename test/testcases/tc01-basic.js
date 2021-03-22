@@ -202,7 +202,7 @@ export class UserDao {
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(id: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<User | undefined> {
+	static async fetch(id: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<User> {
 		const found = await this.find(id, conn, options);
 		if (!found) throw new Error(\`No such #User{id: \${id}}\`);
 		return found;
