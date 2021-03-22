@@ -30,6 +30,14 @@ describe('기본 모델 테스트', () => {
 						converter: 'GenderType'
 					}
 				},
+				grade: {
+					title: '등급',
+					type: 'char(1)',
+					property: {
+						type: 'Grade',
+						converter: 'GradeType'
+					}
+				},
 				adult: {
 					type: 'tinyint not null',
 					property: { type: 'boolean' }
@@ -58,7 +66,7 @@ describe('기본 모델 테스트', () => {
 				{ with: ['name'] }
 			],
 			imports: {
-				'../src/lib/types': ['Gender', 'GenderType', 'NatCode']
+				'../src/lib/types': ['Gender', 'GenderType', 'Grade', 'GradeType', 'NatCode']
 			}
 		};
 		prj.dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dcg-'))
@@ -92,7 +100,7 @@ import _ from 'lodash';
 import assert from 'assert';
 import mysql, { Connection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import { Gender, GenderType, NatCode } from '../../src/lib/types';
+import { Gender, GenderType, Grade, GradeType, NatCode } from '../../src/lib/types';
 
 export interface UserData {
 	/** 이름 */
@@ -103,6 +111,8 @@ export interface UserData {
 	 * - F: 여성
 	 */
 	gender: Gender;
+	/** 등급 */
+	grade?: Grade | null;
 	adult: boolean;
 	/** 주소 */
 	addr?: string | null;
@@ -130,6 +140,9 @@ export class UserDao {
 
 		if (row.gender === null || row.gender === undefined) throw new Error('row.gender cannot be null');
 		else dest.gender = GenderType.toPropertyValue(row.gender);
+
+		if (row.grade === null || row.grade === undefined) dest.grade = null;
+		else dest.grade = GradeType.toPropertyValue(row.grade);
 
 		if (_.isBoolean(row.adult)) dest.adult = row.adult;
 		else if (_.isNumber(row.adult)) dest.adult = !!row.adult;
@@ -190,6 +203,7 @@ export class UserDao {
 			} else {
 				wheres.push(\`\${key}=?\`);
 				if (key === 'gender') params.push(GenderType.toSqlValue(val));
+				else if (key === 'grade') params.push(GradeType.toSqlValue(val));
 				else params.push(val);
 			}
 		}
@@ -215,6 +229,9 @@ export class UserDao {
 
 		if (data.gender === null || data.gender === undefined) throw new Error('data.gender cannot be null or undefined');
 		else params.gender = GenderType.toSqlValue(data.gender);
+
+		if (data.grade === null || data.grade === undefined) params.grade = null;
+		else params.grade = GradeType.toSqlValue(data.grade);
 
 		if (data.adult === null || data.adult === undefined) throw new Error('data.adult cannot be null or undefined');
 		else params.adult = data.adult;
@@ -253,6 +270,11 @@ export class UserDao {
 			if (data.gender === null) throw new Error('data.gender cannot be null or undefined');
 			params.gender = GenderType.toSqlValue(data.gender);
 			updates.gender = data.gender;
+		}
+		if (data.grade !== undefined) {
+			if (data.grade === null) params.grade = null;
+			else params.grade = GradeType.toSqlValue(data.grade);
+			updates.grade = data.grade;
 		}
 		if (data.adult !== undefined) {
 			if (data.adult === null) throw new Error('data.adult cannot be null or undefined');
@@ -327,6 +349,7 @@ CREATE TABLE user (
 	id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, -- 사용자ID
 	name CHAR(30) NOT NULL, -- 이름
 	gender CHAR(1) NOT NULL, -- 성별
+	grade CHAR(1), -- 등급
 	adult TINYINT NOT NULL,
 	addr TEXT, -- 주소
 	status ENUM('normal', 'blocked', 'expired') NOT NULL, -- 상태

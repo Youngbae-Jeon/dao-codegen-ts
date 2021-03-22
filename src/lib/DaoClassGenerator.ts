@@ -309,7 +309,12 @@ export class DaoClassGenerator {
 				coder.add(`if (data.${column.propertyName} === null) throw new Error('data.${column.propertyName} cannot be null or undefined');`);
 			}
 			if (column.propertyConverter) {
-				coder.add(`params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`);
+				if (column.notNull) {
+					coder.add(`params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`);
+				} else {
+					coder.add(`if (data.${column.propertyName} === null) params.${column.name} = null;`);
+					coder.add(`else params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`);
+				}
 			} else {
 				if (column.type === 'JSON') {
 					coder.add(`params.${column.name} = JSON.stringify(data.${column.propertyName});`);
