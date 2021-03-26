@@ -179,6 +179,77 @@ export class UserDao {
 		return dest;
 	}
 
+	static assignData(dest: any, src: {[name: string]: any}): Partial<UserData> {
+		if (src.name !== undefined) {
+			if (src.name === null) throw new Error('src.name cannot be null or undefined');
+			dest.name = src.name;
+		}
+		if (src.gender !== undefined) {
+			if (src.gender === null) throw new Error('src.gender cannot be null or undefined');
+			dest.gender = src.gender;
+		}
+		if (src.grade !== undefined) {
+			dest.grade = src.grade;
+		}
+		if (src.adult !== undefined) {
+			if (src.adult === null) throw new Error('src.adult cannot be null or undefined');
+			dest.adult = src.adult;
+		}
+		if (src.addr !== undefined) {
+			dest.addr = src.addr;
+		}
+		if (src.status !== undefined) {
+			if (src.status === null) throw new Error('src.status cannot be null or undefined');
+			dest.status = src.status;
+		}
+		if (src.type !== undefined) {
+			dest.type = src.type;
+		}
+		if (src.nat_code !== undefined) {
+			dest.nat_code = src.nat_code;
+		}
+		return dest;
+	}
+
+	static assign(dest: any, src: {[name: string]: any}): Partial<User> {
+		if (src.id !== undefined) {
+			if (src.id === null) throw new Error('src.id cannot be null or undefined');
+			dest.id = src.id;
+		}
+		this.assignData(dest, src);
+		return dest;
+	}
+
+	static toSqlValues(data: Partial<UserData>): {[name: string]: any} {
+		const params: {[name: string]: any} = {};
+		if (data.name !== undefined) {
+			params.name = data.name;
+		}
+		if (data.gender !== undefined) {
+			params.gender = GenderType.toSqlValue(data.gender);
+		}
+		if (data.grade !== undefined) {
+			if (data.grade === null) params.grade = null;
+			else params.grade = GradeType.toSqlValue(data.grade);
+		}
+		if (data.adult !== undefined) {
+			params.adult = data.adult;
+		}
+		if (data.addr !== undefined) {
+			params.addr = data.addr;
+		}
+		if (data.status !== undefined) {
+			params.status = data.status;
+		}
+		if (data.type !== undefined) {
+			params.type = data.type;
+		}
+		if (data.nat_code !== undefined) {
+			params.nat_code = data.nat_code;
+		}
+		return params;
+	}
+
 	static async find(id: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<User | undefined> {
 		let sql = 'SELECT * FROM user WHERE id=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
@@ -259,45 +330,8 @@ export class UserDao {
 	static async update(origin: User, data: Partial<UserData>, conn: Pick<Connection, 'execute'>): Promise<User> {
 		if (origin.id === null || origin.id === undefined) throw new Error('Argument origin.id cannot be null or undefined');
 
-		const params: {[name: string]: any} = {};
-		const updates: Partial<UserData> = {};
-		if (data.name !== undefined) {
-			if (data.name === null) throw new Error('data.name cannot be null or undefined');
-			params.name = data.name;
-			updates.name = data.name;
-		}
-		if (data.gender !== undefined) {
-			if (data.gender === null) throw new Error('data.gender cannot be null or undefined');
-			params.gender = GenderType.toSqlValue(data.gender);
-			updates.gender = data.gender;
-		}
-		if (data.grade !== undefined) {
-			if (data.grade === null) params.grade = null;
-			else params.grade = GradeType.toSqlValue(data.grade);
-			updates.grade = data.grade;
-		}
-		if (data.adult !== undefined) {
-			if (data.adult === null) throw new Error('data.adult cannot be null or undefined');
-			params.adult = data.adult;
-			updates.adult = data.adult;
-		}
-		if (data.addr !== undefined) {
-			params.addr = data.addr;
-			updates.addr = data.addr;
-		}
-		if (data.status !== undefined) {
-			if (data.status === null) throw new Error('data.status cannot be null or undefined');
-			params.status = data.status;
-			updates.status = data.status;
-		}
-		if (data.type !== undefined) {
-			params.type = data.type;
-			updates.type = data.type;
-		}
-		if (data.nat_code !== undefined) {
-			params.nat_code = data.nat_code;
-			updates.nat_code = data.nat_code;
-		}
+		const updates = this.assignData({}, data);
+		const params = this.toSqlValues(updates);
 
 		const stmt = mysql.format(
 			\`UPDATE user SET ? WHERE id=?\`,

@@ -119,6 +119,42 @@ export class ProductDao {
 		return dest;
 	}
 
+	static assignData(dest: any, src: {[name: string]: any}): Partial<ProductData> {
+		if (src.shipment !== undefined) {
+			dest.shipment = src.shipment;
+		}
+		if (src.spec !== undefined) {
+			dest.spec = src.spec;
+		}
+		if (src.supply !== undefined) {
+			dest.supply = src.supply;
+		}
+		return dest;
+	}
+
+	static assign(dest: any, src: {[name: string]: any}): Partial<Product> {
+		if (src.product_no !== undefined) {
+			if (src.product_no === null) throw new Error('src.product_no cannot be null or undefined');
+			dest.product_no = src.product_no;
+		}
+		this.assignData(dest, src);
+		return dest;
+	}
+
+	static toSqlValues(data: Partial<ProductData>): {[name: string]: any} {
+		const params: {[name: string]: any} = {};
+		if (data.shipment !== undefined) {
+			params.shipment = JSON.stringify(data.shipment);
+		}
+		if (data.spec !== undefined) {
+			params.spec = JSON.stringify(data.spec);
+		}
+		if (data.supply !== undefined) {
+			params.supply = JSON.stringify(data.supply);
+		}
+		return params;
+	}
+
 	static async find(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<Product | undefined> {
 		let sql = 'SELECT * FROM product WHERE product_no=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
@@ -188,20 +224,8 @@ export class ProductDao {
 	static async update(origin: Product, data: Partial<ProductData>, conn: Pick<Connection, 'execute'>): Promise<Product> {
 		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
 
-		const params: {[name: string]: any} = {};
-		const updates: Partial<ProductData> = {};
-		if (data.shipment !== undefined) {
-			params.shipment = JSON.stringify(data.shipment);
-			updates.shipment = data.shipment;
-		}
-		if (data.spec !== undefined) {
-			params.spec = JSON.stringify(data.spec);
-			updates.spec = data.spec;
-		}
-		if (data.supply !== undefined) {
-			params.supply = JSON.stringify(data.supply);
-			updates.supply = data.supply;
-		}
+		const updates = this.assignData({}, data);
+		const params = this.toSqlValues(updates);
 
 		const stmt = mysql.format(
 			\`UPDATE product SET ? WHERE product_no=?\`,

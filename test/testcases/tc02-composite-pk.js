@@ -111,6 +111,40 @@ export class ProductVariantDao {
 		return dest;
 	}
 
+	static assignData(dest: any, src: {[name: string]: any}): Partial<ProductVariantData> {
+		if (src.color !== undefined) {
+			dest.color = src.color;
+		}
+		if (src.size !== undefined) {
+			dest.size = src.size;
+		}
+		return dest;
+	}
+
+	static assign(dest: any, src: {[name: string]: any}): Partial<ProductVariant> {
+		if (src.product_no !== undefined) {
+			if (src.product_no === null) throw new Error('src.product_no cannot be null or undefined');
+			dest.product_no = src.product_no;
+		}
+		if (src.variant_no !== undefined) {
+			if (src.variant_no === null) throw new Error('src.variant_no cannot be null or undefined');
+			dest.variant_no = src.variant_no;
+		}
+		this.assignData(dest, src);
+		return dest;
+	}
+
+	static toSqlValues(data: Partial<ProductVariantData>): {[name: string]: any} {
+		const params: {[name: string]: any} = {};
+		if (data.color !== undefined) {
+			params.color = data.color;
+		}
+		if (data.size !== undefined) {
+			params.size = data.size;
+		}
+		return params;
+	}
+
 	static async find(product_no: number, variant_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductVariant | undefined> {
 		let sql = 'SELECT * FROM product_variant WHERE product_no=? AND variant_no=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
@@ -179,16 +213,8 @@ export class ProductVariantDao {
 		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
 		if (origin.variant_no === null || origin.variant_no === undefined) throw new Error('Argument origin.variant_no cannot be null or undefined');
 
-		const params: {[name: string]: any} = {};
-		const updates: Partial<ProductVariantData> = {};
-		if (data.color !== undefined) {
-			params.color = data.color;
-			updates.color = data.color;
-		}
-		if (data.size !== undefined) {
-			params.size = data.size;
-			updates.size = data.size;
-		}
+		const updates = this.assignData({}, data);
+		const params = this.toSqlValues(updates);
 
 		const stmt = mysql.format(
 			\`UPDATE product_variant SET ? WHERE product_no=? AND variant_no=?\`,

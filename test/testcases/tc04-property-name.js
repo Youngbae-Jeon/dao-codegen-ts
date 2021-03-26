@@ -101,6 +101,36 @@ export class ProductSalesInfoDao {
 		return dest;
 	}
 
+	static assignData(dest: any, src: {[name: string]: any}): Partial<ProductSalesInfoData> {
+		if (src.consumerPrice !== undefined) {
+			dest.consumerPrice = src.consumerPrice;
+		}
+		if (src.discountRate !== undefined) {
+			dest.discountRate = src.discountRate;
+		}
+		return dest;
+	}
+
+	static assign(dest: any, src: {[name: string]: any}): Partial<ProductSalesInfo> {
+		if (src.productNo !== undefined) {
+			if (src.productNo === null) throw new Error('src.productNo cannot be null or undefined');
+			dest.productNo = src.productNo;
+		}
+		this.assignData(dest, src);
+		return dest;
+	}
+
+	static toSqlValues(data: Partial<ProductSalesInfoData>): {[name: string]: any} {
+		const params: {[name: string]: any} = {};
+		if (data.consumerPrice !== undefined) {
+			params.consumer_price = data.consumerPrice;
+		}
+		if (data.discountRate !== undefined) {
+			params.dsct_rate = data.discountRate;
+		}
+		return params;
+	}
+
 	static async find(productNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductSalesInfo | undefined> {
 		let sql = 'SELECT * FROM product_sales_info WHERE product_no=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
@@ -161,16 +191,8 @@ export class ProductSalesInfoDao {
 	static async update(origin: ProductSalesInfo, data: Partial<ProductSalesInfoData>, conn: Pick<Connection, 'execute'>): Promise<ProductSalesInfo> {
 		if (origin.productNo === null || origin.productNo === undefined) throw new Error('Argument origin.productNo cannot be null or undefined');
 
-		const params: {[name: string]: any} = {};
-		const updates: Partial<ProductSalesInfoData> = {};
-		if (data.consumerPrice !== undefined) {
-			params.consumer_price = data.consumerPrice;
-			updates.consumerPrice = data.consumerPrice;
-		}
-		if (data.discountRate !== undefined) {
-			params.dsct_rate = data.discountRate;
-			updates.discountRate = data.discountRate;
-		}
+		const updates = this.assignData({}, data);
+		const params = this.toSqlValues(updates);
 
 		const stmt = mysql.format(
 			\`UPDATE product_sales_info SET ? WHERE product_no=?\`,
@@ -265,6 +287,36 @@ export class ProductSalesInfoDao {
 		return dest;
 	}
 
+	static assignData(dest: any, src: {[name: string]: any}): Partial<ProductSalesInfoData> {
+		if (src.consumer_price !== undefined) {
+			dest.consumer_price = src.consumer_price;
+		}
+		if (src.discountRate !== undefined) {
+			dest.discountRate = src.discountRate;
+		}
+		return dest;
+	}
+
+	static assign(dest: any, src: {[name: string]: any}): Partial<ProductSalesInfo> {
+		if (src.product_no !== undefined) {
+			if (src.product_no === null) throw new Error('src.product_no cannot be null or undefined');
+			dest.product_no = src.product_no;
+		}
+		this.assignData(dest, src);
+		return dest;
+	}
+
+	static toSqlValues(data: Partial<ProductSalesInfoData>): {[name: string]: any} {
+		const params: {[name: string]: any} = {};
+		if (data.consumer_price !== undefined) {
+			params.consumer_price = data.consumer_price;
+		}
+		if (data.discountRate !== undefined) {
+			params.dsct_rate = data.discountRate;
+		}
+		return params;
+	}
+
 	static async find(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update'}): Promise<ProductSalesInfo | undefined> {
 		let sql = 'SELECT * FROM product_sales_info WHERE product_no=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
@@ -325,16 +377,8 @@ export class ProductSalesInfoDao {
 	static async update(origin: ProductSalesInfo, data: Partial<ProductSalesInfoData>, conn: Pick<Connection, 'execute'>): Promise<ProductSalesInfo> {
 		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
 
-		const params: {[name: string]: any} = {};
-		const updates: Partial<ProductSalesInfoData> = {};
-		if (data.consumer_price !== undefined) {
-			params.consumer_price = data.consumer_price;
-			updates.consumer_price = data.consumer_price;
-		}
-		if (data.discountRate !== undefined) {
-			params.dsct_rate = data.discountRate;
-			updates.discountRate = data.discountRate;
-		}
+		const updates = this.assignData({}, data);
+		const params = this.toSqlValues(updates);
 
 		const stmt = mysql.format(
 			\`UPDATE product_sales_info SET ? WHERE product_no=?\`,

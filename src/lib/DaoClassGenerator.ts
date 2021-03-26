@@ -25,6 +25,12 @@ export class DaoClassGenerator {
 		coder.add('');
 		this.generateStaticHarvest(coder);
 		coder.add('');
+		this.generateStaticAssignData(coder);
+		coder.add('');
+		this.generateStaticAssign(coder);
+		coder.add('');
+		this.generateStaticToSqlValues(coder);
+		coder.add('');
 		this.generateStaticFind(coder);
 		coder.add('');
 		this.generateStaticFilter(coder);
@@ -147,6 +153,74 @@ export class DaoClassGenerator {
 			coder.add(`else ${this.throwUnhandledValues(column)}`);
 		}
 		coder.add('');
+	}
+
+	private generateStaticAssignData(coder: JsCoder) {
+		const table = this.table;
+		const primaryKeyColumns = table.primaryKeyColumns;
+
+		coder.add(`static assignData(dest: any, src: {[name: string]: any}): Partial<${this.dataTypeName}Data> {`);
+
+		table.columns.filter(column => !primaryKeyColumns.find(pkcolumn => pkcolumn.name === column.name)).forEach(column => this.generateAssignColumn(column, coder));
+
+		coder.add(`
+			return dest;
+		}`);
+	}
+
+	private generateStaticAssign(coder: JsCoder) {
+		const table = this.table;
+		const primaryKeyColumns = table.primaryKeyColumns;
+
+		coder.add(`static assign(dest: any, src: {[name: string]: any}): Partial<${this.dataTypeName}> {`);
+
+		table.columns.filter(column => primaryKeyColumns.find(pkcolumn => pkcolumn.name === column.name)).forEach(column => this.generateAssignColumn(column, coder));
+
+		coder.add(`
+			this.assignData(dest, src);
+			return dest;
+		}`);
+	}
+
+	private generateAssignColumn(column: Column, coder: JsCoder) {
+		coder.add(`if (src.${column.propertyName} !== undefined) {`);
+		if (column.notNull) {
+			coder.add(`if (src.${column.propertyName} === null) throw new Error('src.${column.propertyName} cannot be null or undefined');`);
+		}
+		coder.add(`dest.${column.propertyName} = src.${column.propertyName};`);
+		coder.add('}');
+	}
+
+	private generateStaticToSqlValues(coder: JsCoder) {
+		const table = this.table;
+
+		coder.add(`
+		static toSqlValues(data: Partial<${this.dataTypeName}Data>): {[name: string]: any} {
+			const params: {[name: string]: any} = {};
+		`);
+
+		table.columns.filter(column => !column.primaryKey).forEach(column => {
+			coder.add(`if (data.${column.propertyName} !== undefined) {`);
+			if (column.propertyConverter) {
+				if (column.notNull) {
+					coder.add(`params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`);
+				} else {
+					coder.add(`if (data.${column.propertyName} === null) params.${column.name} = null;`);
+					coder.add(`else params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`);
+				}
+			} else {
+				if (column.type === 'JSON') {
+					coder.add(`params.${column.name} = JSON.stringify(data.${column.propertyName});`);
+				} else {
+					coder.add(`params.${column.name} = data.${column.propertyName};`);
+				}
+			}
+			coder.add('}');
+		});
+
+		coder.add(`
+			return params;
+		}`);
 	}
 
 	private handleNullLikeValues(column: Column): string {
@@ -300,34 +374,9 @@ export class DaoClassGenerator {
 		coder.add('');
 
 		coder.add(`
-			const params: {[name: string]: any} = {};
-			const updates: Partial<${this.dataTypeName}Data> = {};
-		`);
-		table.columns.filter(column => !column.primaryKey).forEach(column => {
-			coder.add(`if (data.${column.propertyName} !== undefined) {`);
-			if (column.notNull) {
-				coder.add(`if (data.${column.propertyName} === null) throw new Error('data.${column.propertyName} cannot be null or undefined');`);
-			}
-			if (column.propertyConverter) {
-				if (column.notNull) {
-					coder.add(`params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`);
-				} else {
-					coder.add(`if (data.${column.propertyName} === null) params.${column.name} = null;`);
-					coder.add(`else params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`);
-				}
-			} else {
-				if (column.type === 'JSON') {
-					coder.add(`params.${column.name} = JSON.stringify(data.${column.propertyName});`);
-				} else {
-					coder.add(`params.${column.name} = data.${column.propertyName};`);
-				}
-			}
-			coder.add(`updates.${column.propertyName} = data.${column.propertyName};`);
-			coder.add('}');
-		});
-		coder.add('');
+			const updates = this.assignData({}, data);
+			const params = this.toSqlValues(updates);
 
-		coder.add(`
 			const stmt = mysql.format(
 				\`UPDATE ${table.name} SET ? WHERE ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + '=?').join(' AND ')}\`,
 				[params, ${primaryKeyColumns.map(pkcolumn => 'origin.' + pkcolumn.propertyName).join(', ')}]
