@@ -158,8 +158,8 @@ export class ProductSalesInfoDao {
 			}
 		}
 
-		let stmt = mysql.format(\`SELECT * FROM product_sales_info\`, params);
-		if (wheres.length) stmt += \` WHERE \${wheres.join(' AND ')}\`;
+		let stmt = \`SELECT * FROM product_sales_info\`;
+		if (wheres.length) stmt += mysql.format(\` WHERE \${wheres.join(' AND ')}\`, params);
 		console.log('ProductSalesInfoDao:', stmt);
 
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
@@ -344,8 +344,8 @@ export class ProductSalesInfoDao {
 			}
 		}
 
-		let stmt = mysql.format(\`SELECT * FROM product_sales_info\`, params);
-		if (wheres.length) stmt += \` WHERE \${wheres.join(' AND ')}\`;
+		let stmt = \`SELECT * FROM product_sales_info\`;
+		if (wheres.length) stmt += mysql.format(\` WHERE \${wheres.join(' AND ')}\`, params);
 		console.log('ProductSalesInfoDao:', stmt);
 
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);

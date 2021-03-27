@@ -172,8 +172,8 @@ export class ProductVariantDao {
 			}
 		}
 
-		let stmt = mysql.format(\`SELECT * FROM product_variant\`, params);
-		if (wheres.length) stmt += \` WHERE \${wheres.join(' AND ')}\`;
+		let stmt = \`SELECT * FROM product_variant\`;
+		if (wheres.length) stmt += mysql.format(\` WHERE \${wheres.join(' AND ')}\`, params);
 		console.log('ProductVariantDao:', stmt);
 
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);

@@ -281,8 +281,8 @@ export class DaoClassGenerator {
 				}
 			}
 
-			let stmt = mysql.format(\`SELECT * FROM ${this.table.name}\`, params);
-			if (wheres.length) stmt += \` WHERE \${wheres.join(' AND ')}\`;
+			let stmt = \`SELECT * FROM ${this.table.name}\`;
+			if (wheres.length) stmt += mysql.format(\` WHERE \${wheres.join(' AND ')}\`, params);
 			console.log('${this.name}:', stmt);
 
 			const [rows] = await conn.execute<RowDataPacket[]>(stmt);
