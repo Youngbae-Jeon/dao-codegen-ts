@@ -37,6 +37,9 @@ describe('복잡한 타입 테스트', () => {
 					property: {
 						type: '{supplier_id: number, price: number | Supply.SOLD_OUT}[]'
 					}
+				},
+				etc: {
+					type: 'json not null'
 				}
 			},
 			primaryKey: ['product_no'],
@@ -84,6 +87,7 @@ export interface ProductData {
 	spec?: Array<{title: string, desc: string | number | boolean | Date}> | null;
 	/** 공급정보 */
 	supply?: {supplier_id: number, price: number | Supply.SOLD_OUT}[] | null;
+	etc: any;
 }
 
 /** 상품정보 */
@@ -104,6 +108,9 @@ export class ProductDao {
 
 		if (row.supply === null || row.supply === undefined) dest.supply = null;
 		else dest.supply = row.supply;
+
+		if (row.etc === null || row.etc === undefined) throw new Error('row.etc cannot be null');
+		else dest.etc = row.etc;
 
 		return dest;
 	}
@@ -129,6 +136,10 @@ export class ProductDao {
 		if (src.supply !== undefined) {
 			dest.supply = src.supply;
 		}
+		if (src.etc !== undefined) {
+			if (src.etc === null) throw new Error('src.etc cannot be null or undefined');
+			dest.etc = src.etc;
+		}
 		return dest;
 	}
 
@@ -151,6 +162,9 @@ export class ProductDao {
 		}
 		if (data.supply !== undefined) {
 			params.supply = JSON.stringify(data.supply);
+		}
+		if (data.etc !== undefined) {
+			params.etc = JSON.stringify(data.etc);
 		}
 		return params;
 	}
@@ -208,6 +222,9 @@ export class ProductDao {
 
 		if (data.supply === null || data.supply === undefined) params.supply = null;
 		else params.supply = JSON.stringify(data.supply);
+
+		if (data.etc === null || data.etc === undefined) throw new Error('data.etc cannot be null or undefined');
+		else params.etc = JSON.stringify(data.etc);
 
 		let stmt: string;
 		if (options?.onDuplicate === 'update') {

@@ -88,28 +88,28 @@ class ColumnAnalyzer {
 		const type = this.definition.type;
 
 		const intType = /\b(INT|TINYINT|SMALLINT|BIGINT)(\([0-9]+\))?(\s+UNSIGNED\b)?/i.exec(type);
-		if (intType) return { type: intType[0], propertyType: 'number' };
+		if (intType) return { type: intType[0].toUpperCase(), propertyType: 'number' };
 
 		const numericType = /\bNUMERIC\([0-9]+,[0-9]+\)(\s+UNSIGNED\b)?/i.exec(type);
-		if (numericType) return { type: numericType[0], propertyType: 'number' };
+		if (numericType) return { type: numericType[0].toUpperCase(), propertyType: 'number' };
 
 		const charType = /\b(CHAR|VARCHAR)\([0-9]+\)/i.exec(type);
-		if (charType) return { type: charType[0], propertyType: 'string' };
+		if (charType) return { type: charType[0].toUpperCase(), propertyType: 'string' };
 
 		const textType = /\bTEXT\b/i.exec(type);
-		if (textType) return { type: textType[0], propertyType: 'string' };
+		if (textType) return { type: textType[0].toUpperCase(), propertyType: 'string' };
 
 		const datetimeType = /\bDATETIME\b(\([0-6]\))?/i.exec(type);
-		if (datetimeType) return { type: datetimeType[0], propertyType: 'Date' };
+		if (datetimeType) return { type: datetimeType[0].toUpperCase(), propertyType: 'Date' };
 
 		const dateType = /\bDATE\b/i.exec(type);
-		if (dateType) return { type: dateType[0], propertyType: 'Date' };
+		if (dateType) return { type: dateType[0].toUpperCase(), propertyType: 'Date' };
 
 		const jsonType = /\bJSON\b/i.exec(type);
-		if (jsonType) return { type: jsonType[0], propertyType: 'any' };
+		if (jsonType) return { type: jsonType[0].toUpperCase(), propertyType: 'any' };
 
 		const enumType = /\bENUM\b\(('[^']*'(\s*,\s*'[^']*')*)\)*/i.exec(type);
-		if (enumType) return { type: enumType[0], propertyType: enumType[1].split(/\s*,\s*/).join(' | ') };
+		if (enumType) return { type: enumType[0].replace(/^ENUM/i, 'ENUM'), propertyType: enumType[1].split(/\s*,\s*/).join(' | ') };
 
 		throw new Error(`Cannot parse type for '${this.options.name}': ${type}`);
 	}
