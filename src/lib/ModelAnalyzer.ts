@@ -16,7 +16,7 @@ export class ModelAnalyzer {
 		if (model.primaryKey) {
 			model.primaryKey.forEach((name) => {
 				const columnDefinition = model.columns[name];
-				if (!columnDefinition) throw new Error(`'${name}' of primaryKey does not exists in columns.`);
+				if (!columnDefinition) throw new Error(`'${name}' of primaryKey does not exists in columns (${this.file})`);
 			});
 			return model.primaryKey;
 
@@ -30,7 +30,7 @@ export class ModelAnalyzer {
 
 	analyze(): Table {
 		const primaryKeyColumnNames = this.findPrimaryKeyColumnNames();
-		if (!primaryKeyColumnNames.length) throw new Error(`Model should have a primary key.`);
+		if (!primaryKeyColumnNames.length) throw new Error(`Model should have a primary key (${this.file})`);
 
 		const model = this.model;
 		const columns = this.analyzeColumns(primaryKeyColumnNames);
@@ -66,7 +66,7 @@ export class ModelAnalyzer {
 	private analyzeIndexes(columns: Column[]): {name?: string, with: string[], unique?: boolean}[] {
 		return _.map(this.model.indexes, (indef) => {
 			indef.with.forEach(columnName => {
-				if (!columns.find(column => column.name === columnName)) throw Error(`정의되지 않은 컬럼 \'${columnName}\'이 인덱스에서 참조되었습니다`);
+				if (!columns.find(column => column.name === columnName)) throw Error(`정의되지 않은 컬럼 \'${columnName}\'이 인덱스에서 참조되었습니다 (${this.file})`);
 			});
 			return indef;
 		});
