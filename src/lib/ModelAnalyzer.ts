@@ -34,17 +34,18 @@ export class ModelAnalyzer {
 
 		const model = this.model;
 		const columns = this.analyzeColumns(primaryKeyColumnNames);
+		const indexes = this.analyzeIndexes(columns);
 		const primaryKeyColumns = primaryKeyColumnNames.map(columnName => columns.find(column => column.name === columnName)!);
 		const table: Table = {
 			name: model.table,
 			modelName: this.getName(),
 			columns,
 			primaryKeyColumns,
+			indexes,
 			modelFile: this.file
 		};
 		if (model.title) table.title = model.title;
 		if (model.description) table.description = model.description;
-		if (model.indexes) table.indexes = model.indexes;
 		if (model.imports) table.imports = model.imports;
 
 		return table;
@@ -60,6 +61,15 @@ export class ModelAnalyzer {
 			columns.push(column);
 		});
 		return columns;
+	}
+
+	private analyzeIndexes(columns: Column[]): {name?: string, with: string[], unique?: boolean}[] {
+		return _.map(this.model.indexes, (indef) => {
+			indef.with.forEach(columnName => {
+				if (!columns.find(column => column.name === columnName)) throw Error(`정의되지 않은 컬럼 \'${columnName}\'이 인덱스에서 참조되었습니다`);
+			});
+			return indef;
+		});
 	}
 }
 
