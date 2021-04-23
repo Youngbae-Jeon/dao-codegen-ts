@@ -57,7 +57,7 @@ class Tokenizer {
 		return this.tokens;
 	}
 
-	endupBuffer(ch?: string) {
+	private endupBuffer(ch?: string) {
 		if (ch) this.buffer.push(ch);
 		if (this.buffer.length) {
 			const token = this.buffer.join('');
@@ -66,7 +66,7 @@ class Tokenizer {
 		}
 	}
 
-	expression(token: string): Expression {
+	private expression(token: string): Expression {
 		switch (token) {
 			case '<':
 			case '>':
