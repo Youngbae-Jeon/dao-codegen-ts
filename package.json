@@ -23,12 +23,8 @@
 	"homepage": "https://github.com/Youngbae-Jeon/dao-codegen-ts#readme",
 	"dependencies": {
 		"ajv": "^7.1.1",
-		"eslint": "^7.24.0",
-		"eslint-config-prettier": "^8.2.0",
-		"eslint-plugin-prettier": "^3.4.0",
 		"glob": "^7.1.6",
 		"lodash": "^4.17.21",
-		"prettier": "^2.2.1",
 		"yaml": "^1.10.0"
 	},
 	"devDependencies": {
@@ -39,7 +35,11 @@
 		"@types/yaml": "^1.9.7",
 		"chai": "^4.3.0",
 		"chai-as-promised": "^7.1.1",
+		"eslint": "^7.24.0",
+		"eslint-config-prettier": "^8.2.0",
+		"eslint-plugin-prettier": "^3.4.0",
 		"mocha": "^8.3.0",
+		"prettier": "^2.2.1",
 		"source-map-support": "^0.5.19",
 		"typescript": "^4.2.2"
 	},
