@@ -320,7 +320,9 @@ export class DaoClassGenerator {
 		const primaryKeyColumns = table.primaryKeyColumns;
 
 		if (primaryKeyColumns.length === 1 && primaryKeyColumns[0].autoIncrement) {
-			coder.add(`static async create(data: ${this.dataTypeName}Data, conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}> {`);
+			coder.add(hasDataColumns
+				? `static async create(data: ${this.dataTypeName}Data, conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}> {`
+				: `static async create(conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}> {`);
 		} else {
 			const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
 			coder.add(hasDataColumns
@@ -354,14 +356,18 @@ export class DaoClassGenerator {
 		}
 
 		if (primaryKeyColumns.length === 1 && primaryKeyColumns[0].autoIncrement) {
+			coder.add(hasDataColumns
+				? `const stmt = mysql.format('INSERT INTO ${table.name} SET ?', [params]);`
+				: `const stmt = 'INSERT INTO ${table.name}'`);
 			coder.add(`
-			const stmt = mysql.format('INSERT INTO ${table.name} SET ?', [params]);
 			console.log('${this.name}:', stmt);
 
 			const [result] = await conn.execute<ResultSetHeader>(stmt);
 			const ${primaryKeyColumns[0].propertyName} = result.insertId;
-			return {...data, ${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}};
 			`);
+			coder.add(hasDataColumns
+				? `return {...data, ${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}};`
+				: `return {${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}};`);
 
 		} else if (hasDataColumns) {
 			coder.add(`
