@@ -20,27 +20,37 @@ export class DaoClassGenerator {
 		const coder = new JsCoder();
 		this.writeImports(modules);
 
+		const hasDataColumns = this.table.columns.length > this.table.primaryKeyColumns.length;
+
 		coder.add(`export class ${this.name} {`);
-		this.generateStaticHarvestData(coder);
+		if (hasDataColumns) {
+			this.generateStaticHarvestData(coder);
+			coder.add('');
+		}
+		this.generateStaticHarvest(coder, hasDataColumns);
 		coder.add('');
-		this.generateStaticHarvest(coder);
+		if (hasDataColumns) {
+			this.generateStaticAssignData(coder);
+			coder.add('');
+		}
+		this.generateStaticAssign(coder, hasDataColumns);
 		coder.add('');
-		this.generateStaticAssignData(coder);
-		coder.add('');
-		this.generateStaticAssign(coder);
-		coder.add('');
-		this.generateStaticToSqlValues(coder);
-		coder.add('');
+		if (hasDataColumns) {
+			this.generateStaticToSqlValues(coder);
+			coder.add('');
+		}
 		this.generateStaticFind(coder);
 		coder.add('');
 		this.generateStaticFilter(coder);
 		coder.add('');
 		this.generateStaticFetch(coder);
 		coder.add('');
-		this.generateStaticCreate(coder);
+		this.generateStaticCreate(coder, hasDataColumns);
 		coder.add('');
-		this.generateStaticUpdate(coder);
-		coder.add('');
+		if (hasDataColumns) {
+			this.generateStaticUpdate(coder);
+			coder.add('');
+		}
 		this.generateStaticDelete(coder);
 		coder.add('}');
 
@@ -87,7 +97,6 @@ export class DaoClassGenerator {
 	private generateStaticHarvestData(coder: JsCoder) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
-
 		coder.add(`static harvestData(row: {[name: string]: any}, dest?: any): ${this.dataTypeName}Data {`);
 		coder.add(`if (!dest) dest = {};`);
 		coder.add('');
@@ -99,7 +108,7 @@ export class DaoClassGenerator {
 		}`);
 	}
 
-	private generateStaticHarvest(coder: JsCoder) {
+	private generateStaticHarvest(coder: JsCoder, hasDataColumns: boolean) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
@@ -109,8 +118,10 @@ export class DaoClassGenerator {
 
 		table.columns.filter(column => primaryKeyColumns.find(pkcolumn => pkcolumn.name === column.name)).forEach(column => this.generateHarvestColumn(column, coder));
 
+		if (hasDataColumns) {
+			coder.add(`this.harvestData(row, dest);`);
+		}
 		coder.add(`
-			this.harvestData(row, dest);
 			return dest;
 		}`);
 	}
@@ -168,7 +179,7 @@ export class DaoClassGenerator {
 		}`);
 	}
 
-	private generateStaticAssign(coder: JsCoder) {
+	private generateStaticAssign(coder: JsCoder, hasDataColumns: boolean) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
@@ -176,8 +187,10 @@ export class DaoClassGenerator {
 
 		table.columns.filter(column => primaryKeyColumns.find(pkcolumn => pkcolumn.name === column.name)).forEach(column => this.generateAssignColumn(column, coder));
 
+		if (hasDataColumns) {
+			coder.add(`this.assignData(dest, src);`);
+		}
 		coder.add(`
-			this.assignData(dest, src);
 			return dest;
 		}`);
 	}
@@ -302,7 +315,7 @@ export class DaoClassGenerator {
 		}`);
 	}
 
-	private generateStaticCreate(coder: JsCoder) {
+	private generateStaticCreate(coder: JsCoder, hasDataColumns: boolean) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
@@ -310,31 +323,35 @@ export class DaoClassGenerator {
 			coder.add(`static async create(data: ${this.dataTypeName}Data, conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}> {`);
 		} else {
 			const pkargs = primaryKeyColumns.map(pkcolumn => `${pkcolumn.propertyName}: ${pkcolumn.propertyType}`).join(', ');
-			coder.add(`static async create(${pkargs}, data: ${this.dataTypeName}Data, conn: Pick<Connection, 'execute'>, options?: { onDuplicate?: 'update' }): Promise<${this.dataTypeName}> {`);
+			coder.add(hasDataColumns
+				? `static async create(${pkargs}, data: ${this.dataTypeName}Data, conn: Pick<Connection, 'execute'>, options?: { onDuplicate?: 'update' }): Promise<${this.dataTypeName}> {`
+				: `static async create(${pkargs}, conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}> {`);
 			primaryKeyColumns.forEach(pkcolumn => {
 				coder.add(`if (${pkcolumn.propertyName} === null || ${pkcolumn.propertyName} === undefined) throw new Error('Argument ${pkcolumn.propertyName} cannot be null or undefined');`);
 			});
 			coder.add('');
 		}
 
-		coder.add(`const params: {[name: string]: any} = {};`);
-		table.columns.filter(column => !column.primaryKey).forEach(column => {
-			if (column.notNull) {
-				coder.add(`if (data.${column.propertyName} === null || data.${column.propertyName} === undefined) throw new Error('data.${column.propertyName} cannot be null or undefined');`);
-			} else {
-				coder.add(`if (data.${column.propertyName} === null || data.${column.propertyName} === undefined) params.${column.name} = null;`);
-			}
-			if (column.propertyConverter) {
-				coder.add(`else params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`)
-			} else {
-				if (column.type === 'JSON') {
-					coder.add(`else params.${column.name} = JSON.stringify(data.${column.propertyName});`);
+		if (hasDataColumns) {
+			coder.add(`const params: {[name: string]: any} = {};`);
+			table.columns.filter(column => !column.primaryKey).forEach(column => {
+				if (column.notNull) {
+					coder.add(`if (data.${column.propertyName} === null || data.${column.propertyName} === undefined) throw new Error('data.${column.propertyName} cannot be null or undefined');`);
 				} else {
-					coder.add(`else params.${column.name} = data.${column.propertyName};`);
+					coder.add(`if (data.${column.propertyName} === null || data.${column.propertyName} === undefined) params.${column.name} = null;`);
 				}
-			}
-			coder.add('');
-		});
+				if (column.propertyConverter) {
+					coder.add(`else params.${column.name} = ${column.propertyConverter}.toSqlValue(data.${column.propertyName});`)
+				} else {
+					if (column.type === 'JSON') {
+						coder.add(`else params.${column.name} = JSON.stringify(data.${column.propertyName});`);
+					} else {
+						coder.add(`else params.${column.name} = data.${column.propertyName};`);
+					}
+				}
+				coder.add('');
+			});
+		}
 
 		if (primaryKeyColumns.length === 1 && primaryKeyColumns[0].autoIncrement) {
 			coder.add(`
@@ -343,9 +360,10 @@ export class DaoClassGenerator {
 
 			const [result] = await conn.execute<ResultSetHeader>(stmt);
 			const ${primaryKeyColumns[0].propertyName} = result.insertId;
+			return {...data, ${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}};
 			`);
 
-		} else {
+		} else if (hasDataColumns) {
 			coder.add(`
 			let stmt: string;
 			if (options?.onDuplicate === 'update') {
@@ -356,11 +374,18 @@ export class DaoClassGenerator {
 			console.log('${this.name}:', stmt);
 
 			await conn.execute<ResultSetHeader>(stmt);
+			return {...data, ${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}};
+			`);
+		} else {
+			coder.add(`
+			const stmt = mysql.format('INSERT INTO ${table.name} SET ${primaryKeyColumns.map(pkcolumn => pkcolumn.name + "=?").join(', ')}', [${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}]);
+			console.log('${this.name}:', stmt);
+
+			await conn.execute<ResultSetHeader>(stmt);
+			return {${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}};
 			`);
 		}
-		coder.add(`
-			return {...data, ${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}};
-		}`);
+		coder.add('}');
 	}
 
 	private generateStaticUpdate(coder: JsCoder) {

@@ -17,25 +17,30 @@ export class ModelInterfaceGenerator {
 
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
+		const hasDataColumns = table.columns.length > table.primaryKeyColumns.length;
 	
 		// interface ~Data
-		coder.add(`export interface ${this.name}Data {`);
-		table.columns.forEach(column => {
-			if (!primaryKeyColumns.find(pkcolumn => pkcolumn.name === column.name)) {
-				this.writeComment(column, coder);
-				if (column.notNull) {
-					coder.add(`${column.propertyName}: ${column.propertyType};`);
-				} else {
-					coder.add(`${column.propertyName}?: ${column.propertyType} | null;`);
+		if (hasDataColumns) {
+			coder.add(`export interface ${this.name}Data {`);
+			table.columns.forEach(column => {
+				if (!primaryKeyColumns.find(pkcolumn => pkcolumn.name === column.name)) {
+					this.writeComment(column, coder);
+					if (column.notNull) {
+						coder.add(`${column.propertyName}: ${column.propertyType};`);
+					} else {
+						coder.add(`${column.propertyName}?: ${column.propertyType} | null;`);
+					}
 				}
-			}
-		});
-		coder.add('}');
-		coder.add('');
+			});
+			coder.add('}');
+			coder.add('');
+		}
 	
 		// interface
 		this.writeComment(table, coder);
-		coder.add(`export interface ${this.name} extends ${this.name}Data {`);
+		coder.add(hasDataColumns
+			? `export interface ${this.name} extends ${this.name}Data {`
+			: `export interface ${this.name} {`);
 		primaryKeyColumns.forEach(pkcolumn => {
 			const column = table.columns.find(column => column.name === pkcolumn.name)!;
 			this.writeComment(column, coder);
