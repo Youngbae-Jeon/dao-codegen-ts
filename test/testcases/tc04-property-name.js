@@ -75,6 +75,8 @@ export interface ProductSalesInfo extends ProductSalesInfoData {
 	productNo: number;
 }
 
+type Nullable<T> = { [P in keyof T]: T[P] | null };
+
 export class ProductSalesInfoDao {
 	static harvestData(row: {[name: string]: any}, dest?: any): ProductSalesInfoData {
 		if (!dest) dest = {};
@@ -144,7 +146,7 @@ export class ProductSalesInfoDao {
 		}
 	}
 
-	static async filter(by: Partial<ProductSalesInfo>, conn: Pick<Connection, 'execute'>): Promise<ProductSalesInfo[]> {
+	static async filter(by: Partial<Nullable<ProductSalesInfo>>, conn: Pick<Connection, 'execute'>): Promise<ProductSalesInfo[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -261,6 +263,8 @@ export interface ProductSalesInfo extends ProductSalesInfoData {
 	product_no: number;
 }
 
+type Nullable<T> = { [P in keyof T]: T[P] | null };
+
 export class ProductSalesInfoDao {
 	static harvestData(row: {[name: string]: any}, dest?: any): ProductSalesInfoData {
 		if (!dest) dest = {};
@@ -330,7 +334,7 @@ export class ProductSalesInfoDao {
 		}
 	}
 
-	static async filter(by: Partial<ProductSalesInfo>, conn: Pick<Connection, 'execute'>): Promise<ProductSalesInfo[]> {
+	static async filter(by: Partial<Nullable<ProductSalesInfo>>, conn: Pick<Connection, 'execute'>): Promise<ProductSalesInfo[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);

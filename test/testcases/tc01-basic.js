@@ -130,6 +130,8 @@ export interface User extends UserData {
 	id: number;
 }
 
+type Nullable<T> = { [P in keyof T]: T[P] | null };
+
 export class UserDao {
 	static harvestData(row: {[name: string]: any}, dest?: any): UserData {
 		if (!dest) dest = {};
@@ -263,7 +265,7 @@ export class UserDao {
 		}
 	}
 
-	static async filter(by: Partial<User>, conn: Pick<Connection, 'execute'>): Promise<User[]> {
+	static async filter(by: Partial<Nullable<User>>, conn: Pick<Connection, 'execute'>): Promise<User[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);

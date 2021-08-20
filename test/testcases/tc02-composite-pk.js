@@ -81,6 +81,8 @@ export interface ProductVariant extends ProductVariantData {
 	variant_no: number;
 }
 
+type Nullable<T> = { [P in keyof T]: T[P] | null };
+
 export class ProductVariantDao {
 	static harvestData(row: {[name: string]: any}, dest?: any): ProductVariantData {
 		if (!dest) dest = {};
@@ -158,7 +160,7 @@ export class ProductVariantDao {
 		}
 	}
 
-	static async filter(by: Partial<ProductVariant>, conn: Pick<Connection, 'execute'>): Promise<ProductVariant[]> {
+	static async filter(by: Partial<Nullable<ProductVariant>>, conn: Pick<Connection, 'execute'>): Promise<ProductVariant[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);

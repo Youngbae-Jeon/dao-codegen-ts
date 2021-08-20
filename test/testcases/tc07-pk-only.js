@@ -63,6 +63,8 @@ export interface Options {
 	size: number;
 }
 
+type Nullable<T> = { [P in keyof T]: T[P] | null };
+
 export class OptionsDao {
 	static harvest(row: {[name: string]: any}, dest?: any): Options {
 		if (!dest) dest = {};
@@ -103,7 +105,7 @@ export class OptionsDao {
 		}
 	}
 
-	static async filter(by: Partial<Options>, conn: Pick<Connection, 'execute'>): Promise<Options[]> {
+	static async filter(by: Partial<Nullable<Options>>, conn: Pick<Connection, 'execute'>): Promise<Options[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);

@@ -20,6 +20,9 @@ export class DaoClassGenerator {
 		const coder = new JsCoder();
 		this.writeImports(modules);
 
+		this.generateTypeDefinitions(coder);
+		coder.add('');
+
 		const hasDataColumns = this.table.columns.length > this.table.primaryKeyColumns.length;
 
 		coder.add(`export class ${this.name} {`);
@@ -92,6 +95,10 @@ export class DaoClassGenerator {
 				if (types.includes(type)) return module;
 			});
 		}
+	}
+
+	private generateTypeDefinitions(coder: JsCoder) {
+		coder.add(`type Nullable<T> = { [P in keyof T]: T[P] | null };`);
 	}
 
 	private generateStaticHarvestData(coder: JsCoder) {
@@ -269,7 +276,7 @@ export class DaoClassGenerator {
 
 	private generateStaticFilter(coder: JsCoder) {
 		coder.add(`
-		static async filter(by: Partial<${this.dataTypeName}>, conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}[]> {
+		static async filter(by: Partial<Nullable<${this.dataTypeName}>>, conn: Pick<Connection, 'execute'>): Promise<${this.dataTypeName}[]> {
 			const wheres: string[] = [];
 			const params: any[] = [];
 			const keys = Object.keys(by);
