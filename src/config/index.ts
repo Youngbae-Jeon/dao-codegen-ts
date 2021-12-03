@@ -71,7 +71,7 @@ function readConfigFile(dest: {[key: string]: any}, filepath: string) {
 
 		Object.assign(dest, config);
 
-    } catch (err) {
+    } catch (err: any) {
         throw new Error(`Error occured while reading config file ${filepath}: ${err.message}`);
     }
 }

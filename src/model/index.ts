@@ -75,7 +75,7 @@ function readModelFile(dest: {[key: string]: any}, filepath: string): ModelDefin
 		Object.assign(dest, config);
 		return dest as ModelDefinition;
 
-    } catch (err) {
+    } catch (err: any) {
         throw new Error(`Error occured while reading config file ${filepath}: ${err.message}`);
     }
 }
