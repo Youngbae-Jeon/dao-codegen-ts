@@ -84,7 +84,9 @@ export interface ProductVariant extends ProductVariantData {
 type Nullable<T> = { [P in keyof T]: T[P] | null };
 
 export class ProductVariantDao {
-	static harvestData(row: {[name: string]: any}, dest?: any): ProductVariantData {
+	static harvestData(row: {[name: string]: any}): ProductVariantData;
+	static harvestData<T>(row: {[name: string]: any}, dest: T): ProductVariantData & T;
+	static harvestData(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isString(row.color)) dest.color = row.color;
@@ -98,7 +100,9 @@ export class ProductVariantDao {
 		return dest;
 	}
 
-	static harvest(row: {[name: string]: any}, dest?: any): ProductVariant {
+	static harvest(row: {[name: string]: any}): ProductVariant;
+	static harvest<T>(row: {[name: string]: any}, dest: T): ProductVariant & T;
+	static harvest(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isNumber(row.product_no)) dest.product_no = row.product_no;

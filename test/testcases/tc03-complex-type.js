@@ -99,7 +99,9 @@ export interface Product extends ProductData {
 type Nullable<T> = { [P in keyof T]: T[P] | null };
 
 export class ProductDao {
-	static harvestData(row: {[name: string]: any}, dest?: any): ProductData {
+	static harvestData(row: {[name: string]: any}): ProductData;
+	static harvestData<T>(row: {[name: string]: any}, dest: T): ProductData & T;
+	static harvestData(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (row.shipment === null || row.shipment === undefined) dest.shipment = null;
@@ -117,7 +119,9 @@ export class ProductDao {
 		return dest;
 	}
 
-	static harvest(row: {[name: string]: any}, dest?: any): Product {
+	static harvest(row: {[name: string]: any}): Product;
+	static harvest<T>(row: {[name: string]: any}, dest: T): Product & T;
+	static harvest(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isNumber(row.product_no)) dest.product_no = row.product_no;

@@ -78,7 +78,9 @@ export interface ProductSalesInfo extends ProductSalesInfoData {
 type Nullable<T> = { [P in keyof T]: T[P] | null };
 
 export class ProductSalesInfoDao {
-	static harvestData(row: {[name: string]: any}, dest?: any): ProductSalesInfoData {
+	static harvestData(row: {[name: string]: any}): ProductSalesInfoData;
+	static harvestData<T>(row: {[name: string]: any}, dest: T): ProductSalesInfoData & T;
+	static harvestData(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isNumber(row.consumer_price)) dest.consumerPrice = row.consumer_price;
@@ -92,7 +94,9 @@ export class ProductSalesInfoDao {
 		return dest;
 	}
 
-	static harvest(row: {[name: string]: any}, dest?: any): ProductSalesInfo {
+	static harvest(row: {[name: string]: any}): ProductSalesInfo;
+	static harvest<T>(row: {[name: string]: any}, dest: T): ProductSalesInfo & T;
+	static harvest(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isNumber(row.product_no)) dest.productNo = row.product_no;
@@ -266,7 +270,9 @@ export interface ProductSalesInfo extends ProductSalesInfoData {
 type Nullable<T> = { [P in keyof T]: T[P] | null };
 
 export class ProductSalesInfoDao {
-	static harvestData(row: {[name: string]: any}, dest?: any): ProductSalesInfoData {
+	static harvestData(row: {[name: string]: any}): ProductSalesInfoData;
+	static harvestData<T>(row: {[name: string]: any}, dest: T): ProductSalesInfoData & T;
+	static harvestData(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isNumber(row.consumer_price)) dest.consumer_price = row.consumer_price;
@@ -280,7 +286,9 @@ export class ProductSalesInfoDao {
 		return dest;
 	}
 
-	static harvest(row: {[name: string]: any}, dest?: any): ProductSalesInfo {
+	static harvest(row: {[name: string]: any}): ProductSalesInfo;
+	static harvest<T>(row: {[name: string]: any}, dest: T): ProductSalesInfo & T;
+	static harvest(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isNumber(row.product_no)) dest.product_no = row.product_no;
