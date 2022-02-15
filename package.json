@@ -9,7 +9,8 @@
 	},
 	"scripts": {
 		"build": "tsc --build tsconfig.json",
-		"test": "npx mocha test/setup test/testcases/**/*.js --bail --exit"
+		"test": "npx mocha test/setup test/testcases/**/*.js --bail --exit",
+		"prepack": "npm run build"
 	},
 	"repository": {
 		"type": "git",
