@@ -104,7 +104,9 @@ export class DaoClassGenerator {
 	private generateStaticHarvestData(coder: JsCoder) {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
-		coder.add(`static harvestData(row: {[name: string]: any}, dest?: any): ${this.dataTypeName}Data {`);
+		coder.add(`static harvestData(row: {[name: string]: any}): ${this.dataTypeName}Data;`);
+		coder.add(`static harvestData<T>(row: {[name: string]: any}, dest: T): ${this.dataTypeName}Data & T;`);
+		coder.add(`static harvestData(row: {[name: string]: any}, dest?: any) {`);
 		coder.add(`if (!dest) dest = {};`);
 		coder.add('');
 
@@ -119,7 +121,9 @@ export class DaoClassGenerator {
 		const table = this.table;
 		const primaryKeyColumns = table.primaryKeyColumns;
 
-		coder.add(`static harvest(row: {[name: string]: any}, dest?: any): ${this.dataTypeName} {`);
+		coder.add(`static harvest(row: {[name: string]: any}): ${this.dataTypeName};`);
+		coder.add(`static harvest<T>(row: {[name: string]: any}, dest: T): ${this.dataTypeName} & T;`);
+		coder.add(`static harvest(row: {[name: string]: any}, dest?: any) {`);
 		coder.add(`if (!dest) dest = {};`);
 		coder.add('');
 

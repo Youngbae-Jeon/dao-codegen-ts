@@ -66,7 +66,9 @@ export interface Options {
 type Nullable<T> = { [P in keyof T]: T[P] | null };
 
 export class OptionsDao {
-	static harvest(row: {[name: string]: any}, dest?: any): Options {
+	static harvest(row: {[name: string]: any}): Options;
+	static harvest<T>(row: {[name: string]: any}, dest: T): Options & T;
+	static harvest(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isNumber(row.color)) dest.color = row.color;

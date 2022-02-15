@@ -133,7 +133,9 @@ export interface User extends UserData {
 type Nullable<T> = { [P in keyof T]: T[P] | null };
 
 export class UserDao {
-	static harvestData(row: {[name: string]: any}, dest?: any): UserData {
+	static harvestData(row: {[name: string]: any}): UserData;
+	static harvestData<T>(row: {[name: string]: any}, dest: T): UserData & T;
+	static harvestData(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isString(row.name)) dest.name = row.name;
@@ -170,7 +172,9 @@ export class UserDao {
 		return dest;
 	}
 
-	static harvest(row: {[name: string]: any}, dest?: any): User {
+	static harvest(row: {[name: string]: any}): User;
+	static harvest<T>(row: {[name: string]: any}, dest: T): User & T;
+	static harvest(row: {[name: string]: any}, dest?: any) {
 		if (!dest) dest = {};
 
 		if (_.isNumber(row.id)) dest.id = row.id;
