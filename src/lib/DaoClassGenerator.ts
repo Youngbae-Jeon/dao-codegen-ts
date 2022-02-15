@@ -210,9 +210,14 @@ export class DaoClassGenerator {
 		coder.add(`if (src.${column.propertyName} !== undefined) {`);
 		if (column.notNull) {
 			coder.add(`if (src.${column.propertyName} === null) throw new Error('src.${column.propertyName} cannot be null or undefined');`);
+			if (column.propertyType === 'Date') {
+				coder.add(`dest.${column.propertyName} = new Date(src.${column.propertyName});`);
+			} else {
+				coder.add(`dest.${column.propertyName} = src.${column.propertyName};`);
+			}
 		} else {
 			if (column.propertyType === 'Date') {
-				coder.add(`dest.${column.propertyName} = src.${column.propertyName} ? new Date(src.${column.propertyName}) : null;`);
+				coder.add(`dest.${column.propertyName} = src.${column.propertyName} === null ? null : new Date(src.${column.propertyName});`);
 			} else {
 				coder.add(`dest.${column.propertyName} = src.${column.propertyName};`);
 			}
