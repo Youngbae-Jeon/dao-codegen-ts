@@ -76,6 +76,8 @@ export interface ProductSalesInfo extends ProductSalesInfoData {
 }
 
 type Nullable<T> = { [P in keyof T]: T[P] | null };
+type StatementType = 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
+type LogFunction = (sql: string, options: {name: string, type: StatementType}) => void;
 
 export class ProductSalesInfoDao {
 	static harvestData(row: {[name: string]: any}): ProductSalesInfoData;
@@ -137,21 +139,28 @@ export class ProductSalesInfoDao {
 		return params;
 	}
 
-	static async find(productNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo | undefined> {
+	static log(stmt: string, type: StatementType, log?: LogFunction) {
+		if (log) {
+			log(stmt, {name: 'ProductSalesInfoDao', type});
+		} else {
+			console.log('ProductSalesInfoDao:', stmt);
+		}
+	}
+
+	static async find(productNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<ProductSalesInfo | undefined> {
 		let sql = 'SELECT * FROM product_sales_info WHERE product_no=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
 
 		const stmt = mysql.format(sql, [productNo]);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		if (rows.length) {
 			return this.harvest(rows[0]);
 		}
 	}
 
-	static async filter(by: Partial<Nullable<ProductSalesInfo>>, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo[]> {
+	static async filter(by: Partial<Nullable<ProductSalesInfo>>, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -167,20 +176,19 @@ export class ProductSalesInfoDao {
 
 		let stmt = \`SELECT * FROM product_sales_info\`;
 		if (wheres.length) stmt += mysql.format(\` WHERE \${wheres.join(' AND ')}\`, params);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(productNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo> {
+	static async fetch(productNo: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<ProductSalesInfo> {
 		const found = await this.find(productNo, conn, options);
 		if (!found) throw new Error(\`No such #ProductSalesInfo{productNo: \${productNo}}\`);
 		return found;
 	}
 
-	static async create(data: ProductSalesInfoData, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo> {
+	static async create(data: ProductSalesInfoData, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo> {
 		const params: {[name: string]: any} = {};
 		if (data.consumerPrice === null || data.consumerPrice === undefined) params.consumer_price = null;
 		else params.consumer_price = data.consumerPrice;
@@ -189,15 +197,14 @@ export class ProductSalesInfoDao {
 		else params.dsct_rate = data.discountRate;
 
 		const stmt = mysql.format('INSERT INTO product_sales_info SET ?', [params]);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'INSERT', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		const productNo = result.insertId;
 		return {...data, productNo};
 	}
 
-	static async update(origin: ProductSalesInfo, data: Partial<ProductSalesInfoData>, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo> {
+	static async update(origin: ProductSalesInfo, data: Partial<ProductSalesInfoData>, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo> {
 		if (origin.productNo === null || origin.productNo === undefined) throw new Error('Argument origin.productNo cannot be null or undefined');
 
 		const updates = this.assignData({}, data);
@@ -207,25 +214,23 @@ export class ProductSalesInfoDao {
 			\`UPDATE product_sales_info SET ? WHERE product_no=?\`,
 			[params, origin.productNo]
 		);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'UPDATE', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 
 		return Object.assign(origin, updates);
 	}
 
-	static async delete(origin: ProductSalesInfo, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<void> {
+	static async delete(origin: ProductSalesInfo, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<void> {
 		if (origin.productNo === null || origin.productNo === undefined) throw new Error('Argument origin.productNo cannot be null or undefined');
 
 		const stmt = mysql.format(
 			\`DELETE FROM product_sales_info WHERE product_no=?\`,
 			[origin.productNo]
 		);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'DELETE', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 	}
@@ -273,6 +278,8 @@ export interface ProductSalesInfo extends ProductSalesInfoData {
 }
 
 type Nullable<T> = { [P in keyof T]: T[P] | null };
+type StatementType = 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
+type LogFunction = (sql: string, options: {name: string, type: StatementType}) => void;
 
 export class ProductSalesInfoDao {
 	static harvestData(row: {[name: string]: any}): ProductSalesInfoData;
@@ -334,21 +341,28 @@ export class ProductSalesInfoDao {
 		return params;
 	}
 
-	static async find(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo | undefined> {
+	static log(stmt: string, type: StatementType, log?: LogFunction) {
+		if (log) {
+			log(stmt, {name: 'ProductSalesInfoDao', type});
+		} else {
+			console.log('ProductSalesInfoDao:', stmt);
+		}
+	}
+
+	static async find(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<ProductSalesInfo | undefined> {
 		let sql = 'SELECT * FROM product_sales_info WHERE product_no=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
 
 		const stmt = mysql.format(sql, [product_no]);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		if (rows.length) {
 			return this.harvest(rows[0]);
 		}
 	}
 
-	static async filter(by: Partial<Nullable<ProductSalesInfo>>, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo[]> {
+	static async filter(by: Partial<Nullable<ProductSalesInfo>>, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -364,20 +378,19 @@ export class ProductSalesInfoDao {
 
 		let stmt = \`SELECT * FROM product_sales_info\`;
 		if (wheres.length) stmt += mysql.format(\` WHERE \${wheres.join(' AND ')}\`, params);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo> {
+	static async fetch(product_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<ProductSalesInfo> {
 		const found = await this.find(product_no, conn, options);
 		if (!found) throw new Error(\`No such #ProductSalesInfo{product_no: \${product_no}}\`);
 		return found;
 	}
 
-	static async create(data: ProductSalesInfoData, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo> {
+	static async create(data: ProductSalesInfoData, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo> {
 		const params: {[name: string]: any} = {};
 		if (data.consumer_price === null || data.consumer_price === undefined) params.consumer_price = null;
 		else params.consumer_price = data.consumer_price;
@@ -386,15 +399,14 @@ export class ProductSalesInfoDao {
 		else params.dsct_rate = data.discountRate;
 
 		const stmt = mysql.format('INSERT INTO product_sales_info SET ?', [params]);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'INSERT', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		const product_no = result.insertId;
 		return {...data, product_no};
 	}
 
-	static async update(origin: ProductSalesInfo, data: Partial<ProductSalesInfoData>, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<ProductSalesInfo> {
+	static async update(origin: ProductSalesInfo, data: Partial<ProductSalesInfoData>, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo> {
 		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
 
 		const updates = this.assignData({}, data);
@@ -404,25 +416,23 @@ export class ProductSalesInfoDao {
 			\`UPDATE product_sales_info SET ? WHERE product_no=?\`,
 			[params, origin.product_no]
 		);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'UPDATE', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 
 		return Object.assign(origin, updates);
 	}
 
-	static async delete(origin: ProductSalesInfo, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<void> {
+	static async delete(origin: ProductSalesInfo, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<void> {
 		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
 
 		const stmt = mysql.format(
 			\`DELETE FROM product_sales_info WHERE product_no=?\`,
 			[origin.product_no]
 		);
-		if (options?.log) {
-			options.log(stmt, 'ProductSalesInfoDao');
-		}
+		this.log(stmt, 'DELETE', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 	}

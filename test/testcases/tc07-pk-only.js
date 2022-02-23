@@ -64,6 +64,8 @@ export interface Options {
 }
 
 type Nullable<T> = { [P in keyof T]: T[P] | null };
+type StatementType = 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
+type LogFunction = (sql: string, options: {name: string, type: StatementType}) => void;
 
 export class OptionsDao {
 	static harvest(row: {[name: string]: any}): Options;
@@ -94,21 +96,28 @@ export class OptionsDao {
 		return dest;
 	}
 
-	static async find(color: number, size: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<Options | undefined> {
+	static log(stmt: string, type: StatementType, log?: LogFunction) {
+		if (log) {
+			log(stmt, {name: 'OptionsDao', type});
+		} else {
+			console.log('OptionsDao:', stmt);
+		}
+	}
+
+	static async find(color: number, size: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<Options | undefined> {
 		let sql = 'SELECT * FROM options WHERE color=? AND size=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
 
 		const stmt = mysql.format(sql, [color, size]);
-		if (options?.log) {
-			options.log(stmt, 'OptionsDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		if (rows.length) {
 			return this.harvest(rows[0]);
 		}
 	}
 
-	static async filter(by: Partial<Nullable<Options>>, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<Options[]> {
+	static async filter(by: Partial<Nullable<Options>>, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<Options[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -124,32 +133,30 @@ export class OptionsDao {
 
 		let stmt = \`SELECT * FROM options\`;
 		if (wheres.length) stmt += mysql.format(\` WHERE \${wheres.join(' AND ')}\`, params);
-		if (options?.log) {
-			options.log(stmt, 'OptionsDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(color: number, size: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<Options> {
+	static async fetch(color: number, size: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<Options> {
 		const found = await this.find(color, size, conn, options);
 		if (!found) throw new Error(\`No such #Options{color: \${color}, size: \${size}}\`);
 		return found;
 	}
 
-	static async create(color: number, size: number, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<Options> {
+	static async create(color: number, size: number, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<Options> {
 		if (color === null || color === undefined) throw new Error('Argument color cannot be null or undefined');
 		if (size === null || size === undefined) throw new Error('Argument size cannot be null or undefined');
 
 		const stmt = mysql.format('INSERT INTO options SET color=?, size=?', [color, size]);
-		if (options?.log) {
-			options.log(stmt, 'OptionsDao');
-		}
+		this.log(stmt, 'INSERT', options?.log);
+
 		await conn.execute<ResultSetHeader>(stmt);
 		return {color, size};
 	}
 
-	static async delete(origin: Options, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<void> {
+	static async delete(origin: Options, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<void> {
 		if (origin.color === null || origin.color === undefined) throw new Error('Argument origin.color cannot be null or undefined');
 		if (origin.size === null || origin.size === undefined) throw new Error('Argument origin.size cannot be null or undefined');
 
@@ -157,9 +164,8 @@ export class OptionsDao {
 			\`DELETE FROM options WHERE color=? AND size=?\`,
 			[origin.color, origin.size]
 		);
-		if (options?.log) {
-			options.log(stmt, 'OptionsDao');
-		}
+		this.log(stmt, 'DELETE', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 	}

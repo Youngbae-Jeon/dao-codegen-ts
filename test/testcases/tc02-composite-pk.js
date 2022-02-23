@@ -83,6 +83,8 @@ export interface ProductVariant extends ProductVariantData {
 }
 
 type Nullable<T> = { [P in keyof T]: T[P] | null };
+type StatementType = 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
+type LogFunction = (sql: string, options: {name: string, type: StatementType}) => void;
 
 export class ProductVariantDao {
 	static harvestData(row: {[name: string]: any}): ProductVariantData;
@@ -152,21 +154,28 @@ export class ProductVariantDao {
 		return params;
 	}
 
-	static async find(product_no: number, variant_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<ProductVariant | undefined> {
+	static log(stmt: string, type: StatementType, log?: LogFunction) {
+		if (log) {
+			log(stmt, {name: 'ProductVariantDao', type});
+		} else {
+			console.log('ProductVariantDao:', stmt);
+		}
+	}
+
+	static async find(product_no: number, variant_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<ProductVariant | undefined> {
 		let sql = 'SELECT * FROM product_variant WHERE product_no=? AND variant_no=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
 
 		const stmt = mysql.format(sql, [product_no, variant_no]);
-		if (options?.log) {
-			options.log(stmt, 'ProductVariantDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		if (rows.length) {
 			return this.harvest(rows[0]);
 		}
 	}
 
-	static async filter(by: Partial<Nullable<ProductVariant>>, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<ProductVariant[]> {
+	static async filter(by: Partial<Nullable<ProductVariant>>, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductVariant[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -182,20 +191,19 @@ export class ProductVariantDao {
 
 		let stmt = \`SELECT * FROM product_variant\`;
 		if (wheres.length) stmt += mysql.format(\` WHERE \${wheres.join(' AND ')}\`, params);
-		if (options?.log) {
-			options.log(stmt, 'ProductVariantDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(product_no: number, variant_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<ProductVariant> {
+	static async fetch(product_no: number, variant_no: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<ProductVariant> {
 		const found = await this.find(product_no, variant_no, conn, options);
 		if (!found) throw new Error(\`No such #ProductVariant{product_no: \${product_no}, variant_no: \${variant_no}}\`);
 		return found;
 	}
 
-	static async create(product_no: number, variant_no: number, data: ProductVariantData, conn: Pick<Connection, 'execute'>, options?: {onDuplicate?: 'update', log?: (sql: string, name: string) => void}): Promise<ProductVariant> {
+	static async create(product_no: number, variant_no: number, data: ProductVariantData, conn: Pick<Connection, 'execute'>, options?: {onDuplicate?: 'update', log?: LogFunction}): Promise<ProductVariant> {
 		if (product_no === null || product_no === undefined) throw new Error('Argument product_no cannot be null or undefined');
 		if (variant_no === null || variant_no === undefined) throw new Error('Argument variant_no cannot be null or undefined');
 
@@ -212,14 +220,13 @@ export class ProductVariantDao {
 		} else {
 			stmt = mysql.format('INSERT INTO product_variant SET product_no=?, variant_no=?, ?', [product_no, variant_no, params]);
 		}
-		if (options?.log) {
-			options.log(stmt, 'ProductVariantDao');
-		}
+		this.log(stmt, 'INSERT', options?.log);
+
 		await conn.execute<ResultSetHeader>(stmt);
 		return {...data, product_no, variant_no};
 	}
 
-	static async update(origin: ProductVariant, data: Partial<ProductVariantData>, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<ProductVariant> {
+	static async update(origin: ProductVariant, data: Partial<ProductVariantData>, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductVariant> {
 		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
 		if (origin.variant_no === null || origin.variant_no === undefined) throw new Error('Argument origin.variant_no cannot be null or undefined');
 
@@ -230,16 +237,15 @@ export class ProductVariantDao {
 			\`UPDATE product_variant SET ? WHERE product_no=? AND variant_no=?\`,
 			[params, origin.product_no, origin.variant_no]
 		);
-		if (options?.log) {
-			options.log(stmt, 'ProductVariantDao');
-		}
+		this.log(stmt, 'UPDATE', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 
 		return Object.assign(origin, updates);
 	}
 
-	static async delete(origin: ProductVariant, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<void> {
+	static async delete(origin: ProductVariant, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<void> {
 		if (origin.product_no === null || origin.product_no === undefined) throw new Error('Argument origin.product_no cannot be null or undefined');
 		if (origin.variant_no === null || origin.variant_no === undefined) throw new Error('Argument origin.variant_no cannot be null or undefined');
 
@@ -247,9 +253,8 @@ export class ProductVariantDao {
 			\`DELETE FROM product_variant WHERE product_no=? AND variant_no=?\`,
 			[origin.product_no, origin.variant_no]
 		);
-		if (options?.log) {
-			options.log(stmt, 'ProductVariantDao');
-		}
+		this.log(stmt, 'DELETE', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 	}

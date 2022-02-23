@@ -132,6 +132,8 @@ export interface User extends UserData {
 }
 
 type Nullable<T> = { [P in keyof T]: T[P] | null };
+type StatementType = 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
+type LogFunction = (sql: string, options: {name: string, type: StatementType}) => void;
 
 export class UserDao {
 	static harvestData(row: {[name: string]: any}): UserData;
@@ -257,21 +259,28 @@ export class UserDao {
 		return params;
 	}
 
-	static async find(id: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<User | undefined> {
+	static log(stmt: string, type: StatementType, log?: LogFunction) {
+		if (log) {
+			log(stmt, {name: 'UserDao', type});
+		} else {
+			console.log('UserDao:', stmt);
+		}
+	}
+
+	static async find(id: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<User | undefined> {
 		let sql = 'SELECT * FROM user WHERE id=?';
 		if (options?.for === 'update') sql += ' FOR UPDATE';
 
 		const stmt = mysql.format(sql, [id]);
-		if (options?.log) {
-			options.log(stmt, 'UserDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		if (rows.length) {
 			return this.harvest(rows[0]);
 		}
 	}
 
-	static async filter(by: Partial<Nullable<User>>, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<User[]> {
+	static async filter(by: Partial<Nullable<User>>, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<User[]> {
 		const wheres: string[] = [];
 		const params: any[] = [];
 		const keys = Object.keys(by);
@@ -289,20 +298,19 @@ export class UserDao {
 
 		let stmt = \`SELECT * FROM user\`;
 		if (wheres.length) stmt += mysql.format(\` WHERE \${wheres.join(' AND ')}\`, params);
-		if (options?.log) {
-			options.log(stmt, 'UserDao');
-		}
+		this.log(stmt, 'SELECT', options?.log);
+
 		const [rows] = await conn.execute<RowDataPacket[]>(stmt);
 		return rows.map(row => this.harvest(row));
 	}
 
-	static async fetch(id: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: (sql: string, name: string) => void}): Promise<User> {
+	static async fetch(id: number, conn: Pick<Connection, 'execute'>, options?: {for?: 'update', log?: LogFunction}): Promise<User> {
 		const found = await this.find(id, conn, options);
 		if (!found) throw new Error(\`No such #User{id: \${id}}\`);
 		return found;
 	}
 
-	static async create(data: UserData, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<User> {
+	static async create(data: UserData, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<User> {
 		const params: {[name: string]: any} = {};
 		if (data.name === null || data.name === undefined) throw new Error('data.name cannot be null or undefined');
 		else params.name = data.name;
@@ -329,15 +337,14 @@ export class UserDao {
 		else params.nat_code = data.nat_code;
 
 		const stmt = mysql.format('INSERT INTO user SET ?', [params]);
-		if (options?.log) {
-			options.log(stmt, 'UserDao');
-		}
+		this.log(stmt, 'INSERT', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		const id = result.insertId;
 		return {...data, id};
 	}
 
-	static async update(origin: User, data: Partial<UserData>, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<User> {
+	static async update(origin: User, data: Partial<UserData>, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<User> {
 		if (origin.id === null || origin.id === undefined) throw new Error('Argument origin.id cannot be null or undefined');
 
 		const updates = this.assignData({}, data);
@@ -347,25 +354,23 @@ export class UserDao {
 			\`UPDATE user SET ? WHERE id=?\`,
 			[params, origin.id]
 		);
-		if (options?.log) {
-			options.log(stmt, 'UserDao');
-		}
+		this.log(stmt, 'UPDATE', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 
 		return Object.assign(origin, updates);
 	}
 
-	static async delete(origin: User, conn: Pick<Connection, 'execute'>, options?: {log?: (sql: string, name: string) => void}): Promise<void> {
+	static async delete(origin: User, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<void> {
 		if (origin.id === null || origin.id === undefined) throw new Error('Argument origin.id cannot be null or undefined');
 
 		const stmt = mysql.format(
 			\`DELETE FROM user WHERE id=?\`,
 			[origin.id]
 		);
-		if (options?.log) {
-			options.log(stmt, 'UserDao');
-		}
+		this.log(stmt, 'DELETE', options?.log);
+
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
 		assert(result.affectedRows === 1, \`More than one row has been updated: \${result.affectedRows} rows affected\`);
 	}
