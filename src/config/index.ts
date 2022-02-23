@@ -25,6 +25,7 @@ export interface Generation {
 		dataTypeName?: TargetNameOptions;
 		daoClassName?: TargetNameOptions;
 		output: GenerationOutputOptions;
+		insertMany?: boolean;
 	}
 	sql?: {
 		tableName?: TargetNameOptions;

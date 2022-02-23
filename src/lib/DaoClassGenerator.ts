@@ -8,12 +8,14 @@ import { isKnownGenericType, isPrimativeType, upperCamelCase } from "./utils";
 export class DaoClassGenerator {
 	private name: string;
 	private dataTypeName: string;
+	private insertMany: boolean;
 
-	constructor(private table: Table, options: {dataTypeName: string, daoClassName?: {prefix?: string, suffix?: string}}) {
+	constructor(private table: Table, options: {dataTypeName: string, daoClassName?: {prefix?: string, suffix?: string}, insertMany?: boolean}) {
 		const prefix = _.isString(options.daoClassName?.prefix) ? options.daoClassName?.prefix: '';
 		const suffix = _.isString(options.daoClassName?.suffix) ? options.daoClassName?.suffix : 'Dao';
 		this.name = upperCamelCase(`${prefix}_${table.modelName || table.name}_${suffix}`);
 		this.dataTypeName = options.dataTypeName;
+		this.insertMany = options.insertMany || false;
 	}
 
 	generate(modules: ModulesCoder): {name: string, code: JsCoder} {
@@ -57,6 +59,9 @@ export class DaoClassGenerator {
 			coder.add('');
 		}
 		this.generateStaticDelete(coder);
+		if (this.insertMany) {
+			this.generateStaticInsertMany(coder, hasDataColumns);
+		}
 		coder.add('}');
 
 		if (coder.length()) coder.add('');
@@ -87,6 +92,9 @@ export class DaoClassGenerator {
 		mc.importDefault('assert', 'assert');
 		mc.importDefault('mysql', 'mysql2/promise');
 		mc.import(['Connection', 'RowDataPacket', 'ResultSetHeader'], 'mysql2/promise');
+		if (this.insertMany) {
+			mc.import('escape', 'sqlstring');
+		}
 	}
 
 	protected findModuleFor(type: string): string | undefined {
@@ -427,6 +435,51 @@ export class DaoClassGenerator {
 			return {${primaryKeyColumns.map(pkcolumn => pkcolumn.propertyName).join(', ')}};
 			`);
 		}
+		coder.add('}');
+	}
+
+	private generateStaticInsertMany(coder: JsCoder, hasDataColumns: boolean) {
+		const table = this.table;
+		const primaryKeyColumns = table.primaryKeyColumns;
+
+		if (primaryKeyColumns.length === 1 && primaryKeyColumns[0].autoIncrement) {
+			coder.add(`
+			static async insertMany(dataList: ${this.dataTypeName}Data[], conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ResultSetHeader> {
+			`);
+		} else {
+			coder.add(`
+			static async insertMany(dataList: ${this.dataTypeName}[], conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ResultSetHeader> {
+			`);
+		}
+
+		coder.add(`
+		const sqlValues = dataList.map(data => {
+			const value: string[] = [
+
+		`);
+		const columns = (primaryKeyColumns.length === 1 && primaryKeyColumns[0].autoIncrement) ? table.columns.filter(column => !column.primaryKey) : table.columns;
+		columns.forEach(column => {
+			if (column.propertyConverter) {
+				coder.add(`escape(${column.propertyConverter}.toSqlValue(data.${column.propertyName})),`);
+			} else {
+				if (column.type === 'JSON') {
+					coder.add(`escape(JSON.stringify(data.${column.propertyName})),`);
+				} else {
+					coder.add(`escape(data.${column.propertyName}),`);
+				}
+			}
+		});
+		coder.add(`
+			];
+			return '(' + value.join(',') + ')';
+		});
+
+		const stmt = \`INSERT INTO ${table.name} (${columns.map(column => column.name).join(',')}) VALUES \${sqlValues.join(', ')}\`;
+		this.log(stmt, 'INSERT', options?.log);
+
+		const [result] = await conn.execute<ResultSetHeader>(stmt);
+		return result;
+		`);
 		coder.add('}');
 	}
 

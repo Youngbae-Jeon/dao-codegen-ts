@@ -41,13 +41,13 @@ export class JsCoder {
 	private addLine(text: string) {
 		text = text.replace(/^[\t\r\n]*/, '').replace(/[\t\r\n]*$/, '')
 
-		const openers = text.match(/[\{\(]/g);
-		const closers = text.match(/[\}\)]/g);
+		const openers = text.match(/[\{\(\[]/g);
+		const closers = text.match(/[\}\)\]]/g);
 
 		const openCount = openers && openers.length || 0;
 		const closeCount = closers && closers.length || 0;
 
-		if (text.match(/^[\}\)]/)) {
+		if (text.match(/^[\}\)\]]/)) {
 			if (--this.tabCount < 0) this.tabCount = 0;
 			this.lineList.push([this.tabCount, text]);
 			if (openCount > (closeCount - 1)) {

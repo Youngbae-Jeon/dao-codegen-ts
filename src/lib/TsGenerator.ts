@@ -23,7 +23,7 @@ export class TsGenerator {
 
 		let classCode: JsCoder | undefined = undefined;
 		if (!this.options.dataTypeOnly) {
-			const result = new DaoClassGenerator(this.table, { dataTypeName, daoClassName: this.options.daoClassName }).generate(modules);
+			const result = new DaoClassGenerator(this.table, { dataTypeName, daoClassName: this.options.daoClassName, insertMany: this.options.insertMany }).generate(modules);
 			classCode = result.code;
 		}
 
