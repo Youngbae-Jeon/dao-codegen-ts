@@ -453,28 +453,23 @@ export class DaoClassGenerator {
 		}
 
 		coder.add(`
-		const sqlValues = dataList.map(data => {
-			const value: string[] = [
-
+		const values = dataList.map(data => [
 		`);
 		const columns = (primaryKeyColumns.length === 1 && primaryKeyColumns[0].autoIncrement) ? table.columns.filter(column => !column.primaryKey) : table.columns;
 		columns.forEach(column => {
 			if (column.propertyConverter) {
-				coder.add(`escape(${column.propertyConverter}.toSqlValue(data.${column.propertyName})),`);
+				coder.add(`${column.propertyConverter}.toSqlValue(data.${column.propertyName}),`);
 			} else {
 				if (column.type === 'JSON') {
-					coder.add(`escape(JSON.stringify(data.${column.propertyName})),`);
+					coder.add(`data.${column.propertyName} == null ? null : JSON.stringify(data.${column.propertyName}),`);
 				} else {
-					coder.add(`escape(data.${column.propertyName}),`);
+					coder.add(`data.${column.propertyName},`);
 				}
 			}
 		});
 		coder.add(`
-			];
-			return '(' + value.join(',') + ')';
-		});
-
-		const stmt = \`INSERT INTO ${table.name} (${columns.map(column => column.name).join(',')}) VALUES \${sqlValues.join(', ')}\`;
+		]);
+		const stmt = \`INSERT INTO ${table.name} (${columns.map(column => column.name).join(',')}) VALUES \${escape(values)}\`;
 		this.log(stmt, 'INSERT', options?.log);
 
 		const [result] = await conn.execute<ResultSetHeader>(stmt);
