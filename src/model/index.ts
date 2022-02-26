@@ -23,6 +23,7 @@ export interface ModelDefinition {
 	primaryKey?: string[];
 	/** 인덱스 */
 	indexes?: IndexDefinition[];
+	foreignKeys?: ForeignKeyDefinition[];
 	imports?: {
 		[module: string]: string[]
 	}
@@ -58,6 +59,18 @@ export interface IndexDefinition {
 	with: string[];
 	/** unique 인덱스 여부 */
 	unique?: boolean;
+}
+
+type ReferentialOption = 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION' | 'SET DEFAULT';
+export interface ForeignKeyDefinition {
+	/** 외래키 컬럼 리스트 */
+	with: string[];
+	references: {
+		table: string;
+		columns: string[];
+	}
+	onDelete?: ReferentialOption;
+	onUpdate?: ReferentialOption;
 }
 
 function getModelFilepath(filename: string) {

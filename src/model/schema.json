@@ -31,6 +31,38 @@
 				"unique": { "type": "boolean" }
 			},
 			"required": ["with"]
+		},
+		"ReferentialOption": {
+			"enum": ["CASCADE", "SET NULL", "RESTRICT", "NO ACTION", "SET DEFAULT"]
+		},
+		"ForeignKeyDefinition": {
+			"type": "object",
+			"properties": {
+				"with": {
+					"type": "array",
+					"items": { "type": "string" },
+					"minItems": 1
+				},
+				"references": {
+					"type": "object",
+					"properties": {
+						"table": { "type": "string" },
+						"columns": {
+							"type": "array",
+							"items": { "type": "string" },
+							"minItems": 1
+						},
+						"onDelete": {
+							"$ref": "#/definitions/ReferentialOption"
+						},
+						"onUpdate": {
+							"$ref": "#/definitions/ReferentialOption"
+						}
+					},
+					"required": ["with", "references"]
+				}
+			},
+			"required": ["with"]
 		}
 	},
 	"properties": {
@@ -52,6 +84,10 @@
 		"indexes": {
 			"type": "array",
 			"items": { "$ref": "#/definitions/IndexDefinition" }
+		},
+		"foreignKeys": {
+			"type": "array",
+			"items": { "$ref": "#/definitions/ForeignKeyDefinition" }
 		},
 		"imports": {
 			"type": "object",
