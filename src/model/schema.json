@@ -51,18 +51,18 @@
 							"type": "array",
 							"items": { "type": "string" },
 							"minItems": 1
-						},
-						"onDelete": {
-							"$ref": "#/definitions/ReferentialOption"
-						},
-						"onUpdate": {
-							"$ref": "#/definitions/ReferentialOption"
 						}
 					},
-					"required": ["with", "references"]
+					"required": ["table", "columns"]
+				},
+				"onDelete": {
+					"$ref": "#/definitions/ReferentialOption"
+				},
+				"onUpdate": {
+					"$ref": "#/definitions/ReferentialOption"
 				}
 			},
-			"required": ["with"]
+			"required": ["with", "references"]
 		}
 	},
 	"properties": {

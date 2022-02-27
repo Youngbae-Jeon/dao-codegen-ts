@@ -1,3 +1,5 @@
+import { ForeignKeyDefinition } from "model";
+
 export interface Table {
 	name: string;
 	modelName: string;
@@ -6,6 +8,7 @@ export interface Table {
 	columns: Column[];
 	primaryKeyColumns: Column[];
 	indexes?: {name?: string, with: string[], unique?: boolean}[];
+	foreignKeys?: ForeignKeyDefinition[];
 	imports?: {
 		[module: string]: string[]
 	};

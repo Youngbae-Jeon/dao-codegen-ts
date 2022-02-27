@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { ColumnDefinition, ModelDefinition } from 'model';
+import { ColumnDefinition, ForeignKeyDefinition, ModelDefinition } from 'model';
 
 import { Column, Table } from './table';
 import { upperCamelCase } from './utils';
@@ -35,6 +35,7 @@ export class ModelAnalyzer {
 		const model = this.model;
 		const columns = this.analyzeColumns(primaryKeyColumnNames);
 		const indexes = this.analyzeIndexes(columns);
+		const foreignKeys = this.analyzeForeignKeys(columns);
 		const primaryKeyColumns = primaryKeyColumnNames.map(columnName => columns.find(column => column.name === columnName)!);
 		const table: Table = {
 			name: model.table,
@@ -42,6 +43,7 @@ export class ModelAnalyzer {
 			columns,
 			primaryKeyColumns,
 			indexes,
+			foreignKeys,
 			modelFile: this.file
 		};
 		if (model.title) table.title = model.title;
@@ -66,9 +68,19 @@ export class ModelAnalyzer {
 	private analyzeIndexes(columns: Column[]): {name?: string, with: string[], unique?: boolean}[] {
 		return _.map(this.model.indexes, (indef) => {
 			indef.with.forEach(columnName => {
-				if (!columns.find(column => column.name === columnName)) throw Error(`정의되지 않은 컬럼 \'${columnName}\'이 인덱스에서 참조되었습니다 (${this.file})`);
+				if (!columns.find(column => column.name === columnName)) throw new Error(`정의되지 않은 컬럼 \'${columnName}\'이 인덱스에서 참조되었습니다 (${this.file})`);
 			});
 			return indef;
+		});
+	}
+
+	private analyzeForeignKeys(columns: Column[]): ForeignKeyDefinition[] {
+		return _.map(this.model.foreignKeys, (foreignKey) => {
+			foreignKey.with.forEach(columnName => {
+				if (!columns.find(column => column.name === columnName)) throw new Error(`정의되지 않은 컬럼 \'${columnName}\'이 외래키에서 참조되었습니다 (${this.file})`);
+			});
+			if (foreignKey.with.length !== foreignKey.references.columns.length) throw new Error(`외래키의 참조 컬럼 수가 일치하지 않습니다 (${this.file})`);
+			return foreignKey;
 		});
 	}
 }

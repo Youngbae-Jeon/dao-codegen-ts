@@ -35,6 +35,9 @@ export class SqlGenerator {
 		if (table.indexes?.length) {
 			phrases.push(...this.generateIndexPhrases());
 		}
+		if (table.foreignKeys?.length) {
+			phrases.push(...this.generateForeignKeyPhrases());
+		}
 		return this.convertPhrasesToLines('\t', phrases);
 	}
 
@@ -58,6 +61,20 @@ export class SqlGenerator {
 			let expr = index.unique ? 'UNIQUE INDEX' : 'INDEX';
 			if (index.name) expr += ` ${index.name}`
 			expr += ` (${index.with.join(', ')})`;
+			return {expr};
+		});
+	}
+
+	private generateForeignKeyPhrases(): Phrase[] {
+		return _.map(this.table.foreignKeys, (foreignKey, i) => {
+			let expr = `FOREIGN KEY (${foreignKey.with.join(', ')}) `;
+			expr += `REFERENCES ${foreignKey.references.table}(${foreignKey.references.columns.join(', ')})`;
+			if (foreignKey.onDelete) {
+				expr += ` ON DELETE ${foreignKey.onDelete}`;
+			}
+			if (foreignKey.onUpdate) {
+				expr += ` ON UPDATE ${foreignKey.onUpdate}`;
+			}
 			return {expr};
 		});
 	}
