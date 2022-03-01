@@ -25,6 +25,7 @@
 	"homepage": "https://github.com/Youngbae-Jeon/dao-codegen-ts#readme",
 	"dependencies": {
 		"ajv": "^8.9.0",
+		"dependency-task-runner": "^1.0.7",
 		"glob": "^7.2.0",
 		"lodash": "^4.17.21",
 		"yaml": "^1.10.2"

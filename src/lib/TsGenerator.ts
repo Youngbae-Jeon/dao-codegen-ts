@@ -1,8 +1,10 @@
 import path from 'path';
+import { ModelDefinition } from '..';
 
 import { Generation } from '../config';
 import { DaoClassGenerator } from './DaoClassGenerator';
 import { JsCoder } from './JsCoder';
+import { ModelAnalyzer } from './ModelAnalyzer';
 import { ModelInterfaceGenerator } from './ModelInterfaceGenerator';
 import { ModulesCoder } from './ModulesCoder';
 import { Table } from './table';
@@ -10,9 +12,12 @@ import { upperCamelCase } from './utils';
 
 export class TsGenerator {
 	private name: string;
+	private table: Table;
 
-	constructor(private table: Table, private options: Required<Generation>['ts']) {
+	constructor(model: ModelDefinition, private options: Required<Generation>['ts']) {
+		const table = new ModelAnalyzer(model, {propertyNameStyle: options?.propertyNameStyle}).analyze();
 		this.name = upperCamelCase(`${options.dataTypeName?.prefix || ''}_${table.modelName || table.name}_${options.dataTypeName?.suffix || ''}`);
+		this.table = table;
 	}
 
 	generate(): { name: string, content: string } {

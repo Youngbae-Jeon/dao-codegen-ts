@@ -1,28 +1,33 @@
 import _ from 'lodash';
+import { ModelDefinition } from '..';
 
 import { Generation } from '../config';
+import { ModelAnalyzer } from './ModelAnalyzer';
 import { Table } from './table';
 
 type Phrase = {expr: string, comment?: string};
 
 export class SqlGenerator {
 	private name: string;
+	private table: Table;
 
-	constructor(private table: Table, private options?: Generation['sql']) {
+	constructor(model: ModelDefinition, options?: Generation['sql']) {
+		const table = new ModelAnalyzer(model).analyze();
 		this.name = `${options?.tableName?.prefix || ''}${table.name}${options?.tableName?.suffix || ''}`;
+		this.table = table;
 	}
 
-	generate(): { name: string, content: string } {
-		const lines: string[] = [];
+	generate(): { name: string, statements: string[] } {
+		const statements: string[] = [];
+		statements.push(`DROP TABLE IF EXISTS ${this.name};`);
 
-		lines.push(`DROP TABLE IF EXISTS ${this.name};`);
+		const lines: string[] = [];
 		lines.push(`CREATE TABLE ${this.name} (`);
 		lines.push(...this.generateTableInnerLines());
 		lines.push(');');
-		lines.push('');
-		const content = lines.join('\n');
+		statements.push(lines.join('\n') + '\n'/* tailing linebreak */);
 
-		return { name: this.name, content };
+		return { name: this.name, statements };
 	}
 
 	private generateTableInnerLines(): string[] {

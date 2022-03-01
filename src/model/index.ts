@@ -1,5 +1,7 @@
 import Ajv from 'ajv';
+import { TaskRunner } from 'dependency-task-runner';
 import fs from 'fs';
+import { noop, reduce } from 'lodash';
 import path from 'path';
 import yaml from 'yaml';
 
@@ -9,6 +11,8 @@ import schema from './schema.json';
 export interface ModelDefinition {
 	/** 모델명 */
 	name?: string;
+	/** 파일명 */
+	filepath?: string;
 	/** 테이블명 */
 	table: string;
 	/** 한글명 */
@@ -85,7 +89,7 @@ function readModelFile(dest: {[key: string]: any}, filepath: string): ModelDefin
 		const config = yaml.parse(contents.toString());
 		validateModel(config);
 
-		Object.assign(dest, config);
+		Object.assign(dest, config, {filepath});
 		return dest as ModelDefinition;
 
     } catch (err: any) {
@@ -103,4 +107,28 @@ function validateModel(model: any) {
 export async function loadModel(filename: string): Promise<ModelDefinition> {
 	const filepath = getModelFilepath(filename);
 	return readModelFile({}, filepath);
+}
+
+export async function loadModels(files: string[], options?: {orderByDependency?: boolean}): Promise<ModelDefinition[]> {
+	let models = await Promise.all(files.map(file => loadModel(file)));
+	if (options?.orderByDependency !== false) {
+		return orderByDependency(models);
+	}
+	return models;
+}
+
+function orderByDependency(models: ModelDefinition[]): ModelDefinition[] {
+	const taskRunner = new TaskRunner();
+	models.forEach(model => {
+		const dependencies = reduce(model.foreignKeys, (dependencies: string[], fk) => {
+			const dependency = fk.references.table;
+			// 외래키 테이블이 models 목록에 있는 경우에만 dependency 추가함
+			if (models.find(model => model.table === dependency)) {
+				dependencies.push(dependency);
+			}
+			return dependencies;
+		}, []);
+		taskRunner.add({ name: model.table, dependencies });
+	});
+	return taskRunner.schedule().map(task => models.find(model => model.table === task.name)!);
 }

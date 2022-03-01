@@ -5,7 +5,7 @@ import { Column, Table } from './table';
 import { upperCamelCase } from './utils';
 
 export class ModelAnalyzer {
-	constructor(private model: ModelDefinition, private file: string, private options?: {propertyNameStyle?: 'camel' | 'snake' | 'identical'}) {}
+	constructor(private model: ModelDefinition, private options?: {propertyNameStyle?: 'camel' | 'snake' | 'identical'}) {}
 
 	private getName() {
 		return this.model.name || upperCamelCase(this.model.table);
@@ -16,7 +16,7 @@ export class ModelAnalyzer {
 		if (model.primaryKey) {
 			model.primaryKey.forEach((name) => {
 				const columnDefinition = model.columns[name];
-				if (!columnDefinition) throw new Error(`'${name}' of primaryKey does not exists in columns (${this.file})`);
+				if (!columnDefinition) throw new Error(`'${name}' of primaryKey does not exists in columns (${model.filepath || this.getName()})`);
 			});
 			return model.primaryKey;
 
@@ -30,7 +30,7 @@ export class ModelAnalyzer {
 
 	analyze(): Table {
 		const primaryKeyColumnNames = this.findPrimaryKeyColumnNames();
-		if (!primaryKeyColumnNames.length) throw new Error(`Model should have a primary key (${this.file})`);
+		if (!primaryKeyColumnNames.length) throw new Error(`Model should have a primary key (${this.model.filepath || this.getName()})`);
 
 		const model = this.model;
 		const columns = this.analyzeColumns(primaryKeyColumnNames);
@@ -44,7 +44,7 @@ export class ModelAnalyzer {
 			primaryKeyColumns,
 			indexes,
 			foreignKeys,
-			modelFile: this.file
+			modelFile: this.model.filepath || this.getName()
 		};
 		if (model.title) table.title = model.title;
 		if (model.description) table.description = model.description;
@@ -68,7 +68,7 @@ export class ModelAnalyzer {
 	private analyzeIndexes(columns: Column[]): {name?: string, with: string[], unique?: boolean}[] {
 		return _.map(this.model.indexes, (indef) => {
 			indef.with.forEach(columnName => {
-				if (!columns.find(column => column.name === columnName)) throw new Error(`정의되지 않은 컬럼 \'${columnName}\'이 인덱스에서 참조되었습니다 (${this.file})`);
+				if (!columns.find(column => column.name === columnName)) throw new Error(`정의되지 않은 컬럼 \'${columnName}\'이 인덱스에서 참조되었습니다 (${this.model.filepath || this.getName()})`);
 			});
 			return indef;
 		});
@@ -77,9 +77,9 @@ export class ModelAnalyzer {
 	private analyzeForeignKeys(columns: Column[]): ForeignKeyDefinition[] {
 		return _.map(this.model.foreignKeys, (foreignKey) => {
 			foreignKey.with.forEach(columnName => {
-				if (!columns.find(column => column.name === columnName)) throw new Error(`정의되지 않은 컬럼 \'${columnName}\'이 외래키에서 참조되었습니다 (${this.file})`);
+				if (!columns.find(column => column.name === columnName)) throw new Error(`정의되지 않은 컬럼 \'${columnName}\'이 외래키에서 참조되었습니다 (${this.model.filepath || this.getName()})`);
 			});
-			if (foreignKey.with.length !== foreignKey.references.columns.length) throw new Error(`외래키의 참조 컬럼 수가 일치하지 않습니다 (${this.file})`);
+			if (foreignKey.with.length !== foreignKey.references.columns.length) throw new Error(`외래키의 참조 컬럼 수가 일치하지 않습니다 (${this.model.filepath || this.getName()})`);
 			return foreignKey;
 		});
 	}
