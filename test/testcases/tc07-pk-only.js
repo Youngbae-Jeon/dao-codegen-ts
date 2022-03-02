@@ -190,7 +190,9 @@ export class OptionsDao {
 
 		const content = fs.readFileSync(generated.sql_files[0]).toString();
 		expect(content).to.equal(`
+SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS options;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE options (
 	color INT UNSIGNED NOT NULL, -- 색상
 	size INT UNSIGNED NOT NULL, -- 사이즈

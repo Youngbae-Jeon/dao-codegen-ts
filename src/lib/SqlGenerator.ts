@@ -1,7 +1,7 @@
 import _ from 'lodash';
-import { ModelDefinition } from '..';
 
-import { Generation } from '../config';
+import { ModelDefinition } from '..';
+import { TargetNameOptions } from '../config';
 import { ModelAnalyzer } from './ModelAnalyzer';
 import { Table } from './table';
 
@@ -11,7 +11,7 @@ export class SqlGenerator {
 	private name: string;
 	private table: Table;
 
-	constructor(model: ModelDefinition, options?: Generation['sql']) {
+	constructor(model: ModelDefinition, options?: {tableName?: TargetNameOptions}) {
 		const table = new ModelAnalyzer(model).analyze();
 		this.name = `${options?.tableName?.prefix || ''}${table.name}${options?.tableName?.suffix || ''}`;
 		this.table = table;
@@ -19,7 +19,9 @@ export class SqlGenerator {
 
 	generate(): { name: string, statements: string[] } {
 		const statements: string[] = [];
+		statements.push(`SET FOREIGN_KEY_CHECKS = 0;`);
 		statements.push(`DROP TABLE IF EXISTS ${this.name};`);
+		statements.push(`SET FOREIGN_KEY_CHECKS = 1;`);
 
 		const lines: string[] = [];
 		lines.push(`CREATE TABLE ${this.name} (`);

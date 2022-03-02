@@ -27,7 +27,10 @@ export interface ModelDefinition {
 	primaryKey?: string[];
 	/** 인덱스 */
 	indexes?: IndexDefinition[];
+	/** 외래키 */
 	foreignKeys?: ForeignKeyDefinition[];
+	/** 테이블 의존성 */
+	dependencies?: string[];
 	imports?: {
 		[module: string]: string[]
 	}
@@ -111,6 +114,18 @@ export async function loadModel(filename: string): Promise<ModelDefinition> {
 
 export async function loadModels(files: string[], options?: {orderByDependency?: boolean}): Promise<ModelDefinition[]> {
 	let models = await Promise.all(files.map(file => loadModel(file)));
+
+	models.forEach(model => {
+		model.dependencies = reduce(model.foreignKeys, (dependencies: string[], fk) => {
+			const dependency = fk.references.table;
+			// 외래키 테이블이 models 목록에 있는 경우에만 dependency 추가함
+			if (models.find(model => model.table === dependency)) {
+				dependencies.push(dependency);
+			}
+			return dependencies;
+		}, []);
+	});
+
 	if (options?.orderByDependency !== false) {
 		return orderByDependency(models);
 	}
@@ -119,16 +134,6 @@ export async function loadModels(files: string[], options?: {orderByDependency?:
 
 function orderByDependency(models: ModelDefinition[]): ModelDefinition[] {
 	const taskRunner = new TaskRunner();
-	models.forEach(model => {
-		const dependencies = reduce(model.foreignKeys, (dependencies: string[], fk) => {
-			const dependency = fk.references.table;
-			// 외래키 테이블이 models 목록에 있는 경우에만 dependency 추가함
-			if (models.find(model => model.table === dependency)) {
-				dependencies.push(dependency);
-			}
-			return dependencies;
-		}, []);
-		taskRunner.add({ name: model.table, dependencies });
-	});
+	taskRunner.add(...models.map(model => ({ name: model.table, dependencies: model.dependencies })));
 	return taskRunner.schedule().map(task => models.find(model => model.table === task.name)!);
 }

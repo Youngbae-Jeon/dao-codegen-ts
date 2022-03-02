@@ -61,7 +61,9 @@ describe('기본 모델 테스트', () => {
 
 		const content = fs.readFileSync(generated.sql_files[0]).toString();
 		expect(content).to.equal(`
+SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS user;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE user (
 	id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, -- 사용자ID
 	name CHAR(30) NOT NULL, -- 이름

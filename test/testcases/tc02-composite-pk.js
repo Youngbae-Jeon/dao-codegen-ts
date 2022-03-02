@@ -279,7 +279,9 @@ export class ProductVariantDao {
 
 		const content = fs.readFileSync(generated.sql_files[0]).toString();
 		expect(content).to.equal(`
+SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS product_variant;
+SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE product_variant (
 	product_no INT UNSIGNED NOT NULL, -- 상품번호
 	variant_no INT UNSIGNED NOT NULL, -- 품목번호

@@ -1,6 +1,5 @@
 import { initConfig } from '../config';
 import { executeGeneration } from './generate';
-import util from 'util';
 
 // USAGE: dao-codegen-ts <config_file>
 

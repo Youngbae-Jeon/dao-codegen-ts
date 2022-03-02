@@ -6,11 +6,10 @@ import path from 'path';
 
 import { SqlGenerator } from '../lib/SqlGenerator';
 import { TsGenerator } from '../lib/TsGenerator';
-import { loadModel, loadModels } from '../model';
+import { loadModels } from '../model';
 
 export async function executeGeneration(generation: Generation): Promise<{ts_files: string[], sql_files: string[]}> {
-	const files = listFiles(generation.files);
-	const models = await loadModels(files);
+	const models = await loadModelFiles(generation.files);
 
 	const acc = {ts_files: [] as string[], sql_files: [] as string[]};
 	for (const model of models) {
@@ -33,8 +32,13 @@ export async function executeGeneration(generation: Generation): Promise<{ts_fil
 	return acc;
 }
 
-function listFiles(files: string[]): string[] {
-	const resolved = files.reduce((resolved, file) => {
+export function loadModelFiles(patterns: string[], options?: {orderByDependency?: boolean}) {
+	const files = listModelFiles(patterns);
+	return loadModels(files);
+}
+
+function listModelFiles(patterns: string[]): string[] {
+	const resolved = patterns.reduce((resolved, file) => {
 		const founds = new GlobSync(file).found;
 		if (!founds.length) throw new Error(`No files found maching with ${file}`);
 		resolved.push(...founds);
