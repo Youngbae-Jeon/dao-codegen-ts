@@ -310,6 +310,12 @@ export class UserDao {
 		return found;
 	}
 
+	static async query(sql: string, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<User[]> {
+		this.log(sql, 'SELECT', options?.log);
+		const [rows] = await conn.execute<RowDataPacket[]>(sql);
+		return rows.map(row => this.harvest(row));
+	}
+
 	static async create(data: UserData, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<User> {
 		const params: {[name: string]: any} = {};
 		if (data.name === null || data.name === undefined) throw new Error('data.name cannot be null or undefined');

@@ -227,6 +227,12 @@ export class ProductDao {
 		return found;
 	}
 
+	static async query(sql: string, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<Product[]> {
+		this.log(sql, 'SELECT', options?.log);
+		const [rows] = await conn.execute<RowDataPacket[]>(sql);
+		return rows.map(row => this.harvest(row));
+	}
+
 	static async create(product_no: number, data: ProductData, conn: Pick<Connection, 'execute'>, options?: {onDuplicate?: 'update', log?: LogFunction}): Promise<Product> {
 		if (product_no === null || product_no === undefined) throw new Error('Argument product_no cannot be null or undefined');
 

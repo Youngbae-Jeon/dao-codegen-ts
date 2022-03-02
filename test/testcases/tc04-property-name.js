@@ -188,6 +188,12 @@ export class ProductSalesInfoDao {
 		return found;
 	}
 
+	static async query(sql: string, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo[]> {
+		this.log(sql, 'SELECT', options?.log);
+		const [rows] = await conn.execute<RowDataPacket[]>(sql);
+		return rows.map(row => this.harvest(row));
+	}
+
 	static async create(data: ProductSalesInfoData, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo> {
 		const params: {[name: string]: any} = {};
 		if (data.consumerPrice === null || data.consumerPrice === undefined) params.consumer_price = null;
@@ -388,6 +394,12 @@ export class ProductSalesInfoDao {
 		const found = await this.find(product_no, conn, options);
 		if (!found) throw new Error(\`No such #ProductSalesInfo{product_no: \${product_no}}\`);
 		return found;
+	}
+
+	static async query(sql: string, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo[]> {
+		this.log(sql, 'SELECT', options?.log);
+		const [rows] = await conn.execute<RowDataPacket[]>(sql);
+		return rows.map(row => this.harvest(row));
 	}
 
 	static async create(data: ProductSalesInfoData, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductSalesInfo> {

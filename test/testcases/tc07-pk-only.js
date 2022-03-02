@@ -145,6 +145,12 @@ export class OptionsDao {
 		return found;
 	}
 
+	static async query(sql: string, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<Options[]> {
+		this.log(sql, 'SELECT', options?.log);
+		const [rows] = await conn.execute<RowDataPacket[]>(sql);
+		return rows.map(row => this.harvest(row));
+	}
+
 	static async create(color: number, size: number, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<Options> {
 		if (color === null || color === undefined) throw new Error('Argument color cannot be null or undefined');
 		if (size === null || size === undefined) throw new Error('Argument size cannot be null or undefined');

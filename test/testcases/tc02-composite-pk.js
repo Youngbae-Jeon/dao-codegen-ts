@@ -203,6 +203,12 @@ export class ProductVariantDao {
 		return found;
 	}
 
+	static async query(sql: string, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductVariant[]> {
+		this.log(sql, 'SELECT', options?.log);
+		const [rows] = await conn.execute<RowDataPacket[]>(sql);
+		return rows.map(row => this.harvest(row));
+	}
+
 	static async create(product_no: number, variant_no: number, data: ProductVariantData, conn: Pick<Connection, 'execute'>, options?: {onDuplicate?: 'update', log?: LogFunction}): Promise<ProductVariant> {
 		if (product_no === null || product_no === undefined) throw new Error('Argument product_no cannot be null or undefined');
 		if (variant_no === null || variant_no === undefined) throw new Error('Argument variant_no cannot be null or undefined');

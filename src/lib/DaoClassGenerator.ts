@@ -52,6 +52,8 @@ export class DaoClassGenerator {
 		coder.add('');
 		this.generateStaticFetch(coder);
 		coder.add('');
+		this.generateStaticQuery(coder);
+		coder.add('');
 		this.generateStaticCreate(coder, hasDataColumns);
 		coder.add('');
 		if (hasDataColumns) {
@@ -356,6 +358,27 @@ export class DaoClassGenerator {
 			const found = await this.find(${primaryKeyColumns.map(p => p.propertyName).join(', ')}, conn, options);
 			if (!found) throw new Error(\`No such #${this.dataTypeName}{${primaryKeyColumns.map(p => p.propertyName + ': ${' + p.propertyName + '}').join(', ')}}\`);
 			return found;
+		}`);
+	}
+
+	private generateStaticQuery(coder: JsCoder) {
+		coder.add(`
+		static async query(sql: string, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<${this.dataTypeName}[]>;
+		static async query(sql: string, params: any[], conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<${this.dataTypeName}[]>;
+		static async query(sql: string, arg1: any, arg2: any, arg3?: any): Promise<${this.dataTypeName}[]> {
+			let conn: Pick<Connection, 'execute'>;
+			let options: {log?: LogFunction} | undefined;
+			if (Array.isArray(arg1)) {
+				sql = mysql.format(sql, arg1);
+				conn = arg2;
+				options = arg3;
+			} else {
+				conn = arg1;
+				options = arg2;
+			}
+			this.log(sql, 'SELECT', options?.log);
+			const [rows] = await conn.execute<RowDataPacket[]>(sql);
+			return rows.map(row => this.harvest(row));
 		}`);
 	}
 
