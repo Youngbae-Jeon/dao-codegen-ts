@@ -203,7 +203,19 @@ export class ProductVariantDao {
 		return found;
 	}
 
-	static async query(sql: string, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductVariant[]> {
+	static async query(sql: string, conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductVariant[]>;
+	static async query(sql: string, params: any[], conn: Pick<Connection, 'execute'>, options?: {log?: LogFunction}): Promise<ProductVariant[]>;
+	static async query(sql: string, arg1: any, arg2: any, arg3?: any): Promise<ProductVariant[]> {
+		let conn: Pick<Connection, 'execute'>;
+		let options: {log?: LogFunction} | undefined;
+		if (Array.isArray(arg1)) {
+			sql = mysql.format(sql, arg1);
+			conn = arg2;
+			options = arg3;
+		} else {
+			conn = arg1;
+			options = arg2;
+		}
 		this.log(sql, 'SELECT', options?.log);
 		const [rows] = await conn.execute<RowDataPacket[]>(sql);
 		return rows.map(row => this.harvest(row));

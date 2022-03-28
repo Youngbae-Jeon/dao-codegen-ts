@@ -112,7 +112,7 @@ class ColumnAnalyzer {
 		const intType = /\b(INT|TINYINT|SMALLINT|BIGINT)(\([0-9]+\))?(\s+UNSIGNED\b)?/i.exec(type);
 		if (intType) return { type: intType[0].toUpperCase(), propertyType: 'number' };
 
-		const numericType = /\bNUMERIC\([0-9]+,[0-9]+\)(\s+UNSIGNED\b)?/i.exec(type);
+		const numericType = /\b(DECIMAL|NUMERIC)\([0-9]+,[0-9]+\)(\s+UNSIGNED\b)?/i.exec(type);
 		if (numericType) return { type: numericType[0].toUpperCase(), propertyType: 'number' };
 
 		const charType = /\b(CHAR|VARCHAR)\([0-9]+\)/i.exec(type);
