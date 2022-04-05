@@ -90,6 +90,7 @@ export class ProductSalesInfoDao {
 		else throw new TypeError('Wrong type for row.consumer_price');
 
 		if (_.isNumber(row.dsct_rate)) dest.discountRate = row.dsct_rate;
+		else if (_.isString(row.dsct_rate)) dest.discountRate = parseFloat(row.dsct_rate);
 		else if (row.dsct_rate === null || row.dsct_rate === undefined) dest.discountRate = null;
 		else throw new TypeError('Wrong type for row.dsct_rate');
 
@@ -310,6 +311,7 @@ export class ProductSalesInfoDao {
 		else throw new TypeError('Wrong type for row.consumer_price');
 
 		if (_.isNumber(row.dsct_rate)) dest.discountRate = row.dsct_rate;
+		else if (_.isString(row.dsct_rate)) dest.discountRate = parseFloat(row.dsct_rate);
 		else if (row.dsct_rate === null || row.dsct_rate === undefined) dest.discountRate = null;
 		else throw new TypeError('Wrong type for row.dsct_rate');
 
