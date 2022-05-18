@@ -170,6 +170,13 @@ export class DaoClassGenerator {
 				break;
 			case 'string':
 				coder.add(`if (_.isString(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
+				if (column.type.match(/\bDATE\b/)) {
+					coder.add(`else if (_.isDate(row.${column.name})) { const pad = num => { return (num < 10 ? '0' : '') + num; }; const d = row.${column.name}; dest.${column.propertyName} = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }`);
+				} else if (column.type.match(/\bTIME\b/)) {
+					coder.add(`else if (_.isDate(row.${column.name})) { const pad = num => { return (num < 10 ? '0' : '') + num; }; const d = row.${column.name}; dest.${column.propertyName} = pad(d.getHours()) + '-' + pad(d.getMinutes()) + '-' + pad(d.getSeconds()); }`);
+				} else {
+					coder.add(`else if (_.isDate(row.${column.name})) dest.${column.propertyName} = row.${column.name}.toISOString()`);
+				}
 				break;
 			case 'Date':
 				coder.add(`if (_.isDate(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
