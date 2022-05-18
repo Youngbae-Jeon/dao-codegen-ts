@@ -127,6 +127,9 @@ class ColumnAnalyzer {
 		const dateType = /\bDATE\b/i.exec(type);
 		if (dateType) return { type: dateType[0].toUpperCase(), propertyType: 'Date' };
 
+		const timeType = /\bTIME\b/i.exec(type);
+		if (timeType) return { type: timeType[0].toUpperCase(), propertyType: 'Date' };
+
 		const jsonType = /\bJSON\b/i.exec(type);
 		if (jsonType) return { type: jsonType[0].toUpperCase(), propertyType: 'any' };
 
