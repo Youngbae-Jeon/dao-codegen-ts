@@ -164,7 +164,7 @@ export class DaoClassGenerator {
 				break;
 			case 'number':
 				coder.add(`if (_.isNumber(row.${column.name})) dest.${column.propertyName} = row.${column.name};`);
-				if (column.type.match(/\b(DECIMAL|NUMERIC)\([0-9]+,[0-9]+\)(\s+UNSIGNED\b)?/)) {
+				if (column.type.match(/\b(DECIMAL|NUMERIC|DOUBLE|FLOAT)\([0-9]+,[0-9]+\)(\s+UNSIGNED\b)?/)) {
 					coder.add(`else if (_.isString(row.${column.name})) dest.${column.propertyName} = parseFloat(row.${column.name});`);
 				}
 				break;

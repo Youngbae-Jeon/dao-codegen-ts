@@ -115,6 +115,9 @@ class ColumnAnalyzer {
 		const numericType = /\b(DECIMAL|NUMERIC)\([0-9]+,[0-9]+\)(\s+UNSIGNED\b)?/i.exec(type);
 		if (numericType) return { type: numericType[0].toUpperCase(), propertyType: 'number' };
 
+		const floatType = /\b(FLOAT|DOUBLE)/i.exec(type);
+		if (floatType) return { type: floatType[0].toUpperCase(), propertyType: 'number' };
+
 		const charType = /\b(CHAR|VARCHAR)\([0-9]+\)/i.exec(type);
 		if (charType) return { type: charType[0].toUpperCase(), propertyType: 'string' };
 
