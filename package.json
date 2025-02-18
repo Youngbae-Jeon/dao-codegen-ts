@@ -1,6 +1,6 @@
 {
 	"name": "dao-codegen-ts",
-	"version": "1.2.6",
+	"version": "1.2.7",
 	"description": "Data Access Object code generator for Typescript",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
