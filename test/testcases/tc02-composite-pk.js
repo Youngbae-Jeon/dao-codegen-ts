@@ -93,10 +93,12 @@ export class ProductVariantDao {
 		if (!dest) dest = {};
 
 		if (_.isString(row.color)) dest.color = row.color;
+		else if (_.isDate(row.color)) dest.color = row.color.toISOString();
 		else if (row.color === null || row.color === undefined) dest.color = null;
 		else throw new TypeError('Wrong type for row.color');
 
 		if (_.isString(row.size)) dest.size = row.size;
+		else if (_.isDate(row.size)) dest.size = row.size.toISOString();
 		else if (row.size === null || row.size === undefined) dest.size = null;
 		else throw new TypeError('Wrong type for row.size');
 

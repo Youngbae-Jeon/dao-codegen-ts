@@ -121,7 +121,7 @@ class ColumnAnalyzer {
 		const charType = /\b(CHAR|VARCHAR)\([0-9]+\)/i.exec(type);
 		if (charType) return { type: charType[0].toUpperCase(), propertyType: 'string' };
 
-		const textType = /\bTEXT\b/i.exec(type);
+		const textType = /\b(TEXT|MEDIUMTEXT|LONGTEXT)\b/i.exec(type);
 		if (textType) return { type: textType[0].toUpperCase(), propertyType: 'string' };
 
 		const datetimeType = /\bDATETIME\b(\([0-6]\))?/i.exec(type);

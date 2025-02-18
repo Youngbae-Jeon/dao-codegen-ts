@@ -175,7 +175,7 @@ export class DaoClassGenerator {
 				} else if (column.type.match(/\bTIME\b/)) {
 					coder.add(`else if (_.isDate(row.${column.name})) { const pad = num => { return (num < 10 ? '0' : '') + num; }; const d = row.${column.name}; dest.${column.propertyName} = pad(d.getHours()) + '-' + pad(d.getMinutes()) + '-' + pad(d.getSeconds()); }`);
 				} else {
-					coder.add(`else if (_.isDate(row.${column.name})) dest.${column.propertyName} = row.${column.name}.toISOString()`);
+					coder.add(`else if (_.isDate(row.${column.name})) dest.${column.propertyName} = row.${column.name}.toISOString();`);
 				}
 				break;
 			case 'Date':
